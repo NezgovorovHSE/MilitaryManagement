@@ -55,6 +55,9 @@ public class AddPersonDialog {
         // Правая колонка (StackPane, чтобы поля не накладывались, а переключались)
         StackPane rightStack = new StackPane();
         rightStack.setPrefWidth(350);
+        rightStack.setPrefHeight(312);
+        rightStack.setMaxHeight(312);
+        rightStack.setMinHeight(312);
         rightStack.setStyle("-fx-border-color: #ccc; -fx-border-width: 0 0 0 1; -fx-padding: 0 0 0 20;");
         rightStack.setVisible(false); // изначально скрыта
 
@@ -223,9 +226,9 @@ public class AddPersonDialog {
         buttonBox.getChildren().addAll(saveBtn, cancelBtn);
 
         Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12px;");
+        errorLabel.getStyleClass().add("error-label");
         errorLabel.setWrapText(true);
-        errorLabel.setMaxWidth(900);
+        errorLabel.setMaxWidth(1000);
         errorLabel.setVisible(false);
 
         VBox bottomBox = new VBox(5);
@@ -328,7 +331,7 @@ public class AddPersonDialog {
                 );
 
                 if (!errors.isEmpty()) {
-                    errorLabel.setText("Скорректируйте формат: " + errors);
+                    errorLabel.setText("Неверный формат: " + errors);
                     errorLabel.setVisible(true);
                     return;
                 } else {
@@ -474,7 +477,7 @@ public class AddPersonDialog {
                 errors.add("Выслуга лет - целое число");
             }
             if (!isValidNumber(cmdAllowanceText)) {
-                errors.add("Надбавка (командование) - число");
+                errors.add("Надбавка - число");
             }
         }
         if (selectedType.equals("Награждённые")) {
@@ -482,7 +485,7 @@ public class AddPersonDialog {
                 errors.add("Премия - число");
             }
             if (!isValidNumber(awardedAllowanceText)) {
-                errors.add("Надбавка (награда) - число");
+                errors.add("Надбавка - число");
             }
         }
 
