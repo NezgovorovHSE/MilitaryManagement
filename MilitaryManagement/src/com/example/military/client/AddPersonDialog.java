@@ -442,7 +442,7 @@ public class AddPersonDialog {
             }
         });
 
-        Scene scene = new Scene(root, 1000, 550);
+        Scene scene = new Scene(root, 1000, 508);
         scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
         dialog.setScene(scene);
         dialog.showAndWait();
@@ -527,3 +527,4 @@ public class AddPersonDialog {
         alert.showAndWait();
     }
 }
+
