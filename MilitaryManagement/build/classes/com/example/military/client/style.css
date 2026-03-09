@@ -333,6 +333,14 @@
     -fx-padding: 20px;
 }
 
+/* Сообщение об ошибке */
+.error-label {
+    -fx-text-fill: #ff6b6b;
+    -fx-font-size: 15px;
+    -fx-font-weight: normal;
+    -fx-padding: 5px 0;
+}
+
 .dialog-pane .label {
     -fx-text-fill: #E5E9F0;
     -fx-font-size: 14px;
