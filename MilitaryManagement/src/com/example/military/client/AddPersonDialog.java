@@ -46,16 +46,84 @@ public class AddPersonDialog {
         Label typeLabel = new Label("Тип военнослужащего:");
         ComboBox<String> typeBox = new ComboBox<>();
         typeBox.getItems().addAll("Военнослужащие", "Командование", "Контрактники", "Награждённые");
+
+        HBox typeBoxContainer = new HBox(10);
+        typeBoxContainer.getChildren().add(typeBox);
+
+        // Правая колонка (StackPane, чтобы поля не накладывались, а переключались)
+        StackPane rightStack = new StackPane();
+        rightStack.setPrefWidth(350);
+        rightStack.setStyle("-fx-border-color: #ccc; -fx-border-width: 0 0 0 1; -fx-padding: 0 0 0 20;");
+        rightStack.setVisible(false); // изначально скрыта
+
+        // Поля для командования
+        GridPane commandGrid = new GridPane();
+        commandGrid.setHgap(10);
+        commandGrid.setVgap(10);
+        commandGrid.getColumnConstraints().addAll(
+                new ColumnConstraints(100),
+                new ColumnConstraints(200)
+        );
+
+        // Поля для контрактников
+        GridPane contractGrid = new GridPane();
+        contractGrid.setHgap(10);
+        contractGrid.setVgap(10);
+        contractGrid.getColumnConstraints().addAll(
+                new ColumnConstraints(100),
+                new ColumnConstraints(200)
+        );
+
+        // Поля для награждённых
+        GridPane awardedGrid = new GridPane();
+        awardedGrid.setHgap(10);
+        awardedGrid.setVgap(10);
+        awardedGrid.getColumnConstraints().addAll(
+                new ColumnConstraints(100),
+                new ColumnConstraints(200)
+        );
+
         if (isEditMode) {
             if (existingPerson instanceof MilitaryCommand) typeBox.setValue("Командование");
             else if (existingPerson instanceof MilitaryContract) typeBox.setValue("Контрактники");
             else if (existingPerson instanceof MilitaryAwarded) typeBox.setValue("Награждённые");
             else typeBox.setValue("Военнослужащие");
+
             typeBox.setDisable(true);
+            Button changeTypeBtn = new Button("Изменить тип");
+            changeTypeBtn.setOnAction(e -> {
+                typeBox.setDisable(false);
+                changeTypeBtn.setDisable(true);
+                // Скрываем все дочерние GridPane
+                commandGrid.setVisible(false);
+                contractGrid.setVisible(false);
+                awardedGrid.setVisible(false);
+                // Очищаем правую колонку
+                String currentType = typeBox.getValue();
+
+                if (currentType.equals("Командование")) {
+                    commandGrid.setVisible(true);
+                    rightStack.setVisible(true);
+                    rightStack.setManaged(true);
+                } else if (currentType.equals("Контрактники")) {
+                    contractGrid.setVisible(true);
+                    rightStack.setVisible(true);
+                    rightStack.setManaged(true);
+                } else if (currentType.equals("Награждённые")) {
+                    awardedGrid.setVisible(true);
+                    rightStack.setVisible(true);
+                    rightStack.setManaged(true);
+                } else {
+                    // Если тип "Военнослужащие" — скрываем правую колонку
+                    rightStack.setVisible(false);
+                    rightStack.setManaged(false);
+                }
+            });
+            typeBoxContainer.getChildren().add(changeTypeBtn);
         } else {
             typeBox.setValue("Военнослужащие");
         }
-        topBox.getChildren().addAll(typeLabel, typeBox);
+        topBox.getChildren().addAll(typeLabel, typeBoxContainer);
         root.setTop(topBox);
 
         // Центральная часть – левая колонка (общие поля) и правая колонка (дочерние поля)
@@ -102,20 +170,6 @@ public class AddPersonDialog {
         leftGrid.add(new Label("Часть:"), 0, 6);
         leftGrid.add(unitField, 1, 6);
 
-        // Правая колонка (StackPane, чтобы поля не накладывались, а переключались)
-        StackPane rightStack = new StackPane();
-        rightStack.setPrefWidth(350);
-        rightStack.setStyle("-fx-border-color: #ccc; -fx-border-width: 0 0 0 1; -fx-padding: 0 0 0 20;");
-        rightStack.setVisible(false); // изначально скрыта
-
-        // Поля для командования
-        GridPane commandGrid = new GridPane();
-        commandGrid.setHgap(10);
-        commandGrid.setVgap(10);
-        commandGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(100),
-                new ColumnConstraints(200)
-        );
         TextField districtField = new TextField();
         districtField.setPromptText("Название округа*");
         TextField positionField = new TextField();
@@ -133,14 +187,6 @@ public class AddPersonDialog {
         commandGrid.add(new Label("Надбавка*:"), 0, 3);
         commandGrid.add(cmdAllowanceField, 1, 3);
 
-        // Поля для контрактников
-        GridPane contractGrid = new GridPane();
-        contractGrid.setHgap(10);
-        contractGrid.setVgap(10);
-        contractGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(100),
-                new ColumnConstraints(200)
-        );
         TextField periodField = new TextField();
         periodField.setPromptText("Период договора*");
         TextField contractDateField = new TextField();
@@ -154,14 +200,6 @@ public class AddPersonDialog {
         contractGrid.add(new Label("Номер протокола*:"), 0, 2);
         contractGrid.add(protocolField, 1, 2);
 
-        // Поля для награждённых
-        GridPane awardedGrid = new GridPane();
-        awardedGrid.setHgap(10);
-        awardedGrid.setVgap(10);
-        awardedGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(100),
-                new ColumnConstraints(200)
-        );
         TextField awardNameField = new TextField();
         awardNameField.setPromptText("Название награды*");
         TextField prizeField = new TextField();
