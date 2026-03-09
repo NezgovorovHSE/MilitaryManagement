@@ -37,7 +37,7 @@ public class AddPersonDialog {
         }
 
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(15));
+        root.setPadding(new Insets(10));
 
         // Верхняя часть – выбор типа
         VBox topBox = new VBox(5);
@@ -61,8 +61,8 @@ public class AddPersonDialog {
         commandGrid.setHgap(10);
         commandGrid.setVgap(10);
         commandGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(100),
-                new ColumnConstraints(200)
+                new ColumnConstraints(160),
+                new ColumnConstraints(300)
         );
 
         // Поля для контрактников
@@ -70,8 +70,8 @@ public class AddPersonDialog {
         contractGrid.setHgap(10);
         contractGrid.setVgap(10);
         contractGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(100),
-                new ColumnConstraints(200)
+                new ColumnConstraints(160),
+                new ColumnConstraints(300)
         );
 
         // Поля для награждённых
@@ -79,8 +79,8 @@ public class AddPersonDialog {
         awardedGrid.setHgap(10);
         awardedGrid.setVgap(10);
         awardedGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(100),
-                new ColumnConstraints(200)
+                new ColumnConstraints(160),
+                new ColumnConstraints(300)
         );
 
         if (isEditMode) {
@@ -128,7 +128,7 @@ public class AddPersonDialog {
 
         // Центральная часть – левая колонка (общие поля) и правая колонка (дочерние поля)
         HBox centerBox = new HBox(20);
-        centerBox.setPadding(new Insets(0, 0, 15, 0));
+        centerBox.setPadding(new Insets(0, 0, 5, 0));
 
         // Левая колонка
         GridPane leftGrid = new GridPane();
@@ -136,24 +136,19 @@ public class AddPersonDialog {
         leftGrid.setVgap(10);
         leftGrid.setPrefWidth(350);
         leftGrid.getColumnConstraints().addAll(
-                new ColumnConstraints(100),
-                new ColumnConstraints(200)
+                new ColumnConstraints(160),
+                new ColumnConstraints(300)
         );
 
         TextField lastNameField = new TextField();
-        lastNameField.setPromptText("Фамилия*");
         TextField companyField = new TextField();
-        companyField.setPromptText("Рота*");
         TextField rankField = new TextField();
-        rankField.setPromptText("Звание*");
         TextField salaryField = new TextField();
-        salaryField.setPromptText("Зарплата*");
         TextField birthDateField = new TextField();
         birthDateField.setPromptText("дд.мм.гггг");
         TextField enlistmentDateField = new TextField();
         enlistmentDateField.setPromptText("дд.мм.гггг");
         TextField unitField = new TextField();
-        unitField.setPromptText("Часть");
 
         leftGrid.add(new Label("Фамилия*:"), 0, 0);
         leftGrid.add(lastNameField, 1, 0);
@@ -171,13 +166,9 @@ public class AddPersonDialog {
         leftGrid.add(unitField, 1, 6);
 
         TextField districtField = new TextField();
-        districtField.setPromptText("Название округа*");
         TextField positionField = new TextField();
-        positionField.setPromptText("Должность*");
         TextField yearsField = new TextField();
-        yearsField.setPromptText("Выслуга лет*");
         TextField cmdAllowanceField = new TextField();
-        cmdAllowanceField.setPromptText("Надбавка*");
         commandGrid.add(new Label("Округ*:"), 0, 0);
         commandGrid.add(districtField, 1, 0);
         commandGrid.add(new Label("Должность*:"), 0, 1);
@@ -188,11 +179,9 @@ public class AddPersonDialog {
         commandGrid.add(cmdAllowanceField, 1, 3);
 
         TextField periodField = new TextField();
-        periodField.setPromptText("Период договора*");
         TextField contractDateField = new TextField();
-        contractDateField.setPromptText("Дата договора");
+        contractDateField.setPromptText("дд.мм.гггг");
         TextField protocolField = new TextField();
-        protocolField.setPromptText("Номер протокола*");
         contractGrid.add(new Label("Период*:"), 0, 0);
         contractGrid.add(periodField, 1, 0);
         contractGrid.add(new Label("Дата договора:"), 0, 1);
@@ -201,11 +190,8 @@ public class AddPersonDialog {
         contractGrid.add(protocolField, 1, 2);
 
         TextField awardNameField = new TextField();
-        awardNameField.setPromptText("Название награды*");
         TextField prizeField = new TextField();
-        prizeField.setPromptText("Премия*");
         TextField awardedAllowanceField = new TextField();
-        awardedAllowanceField.setPromptText("Надбавка*");
         awardedGrid.add(new Label("Награда*:"), 0, 0);
         awardedGrid.add(awardNameField, 1, 0);
         awardedGrid.add(new Label("Премия*:"), 0, 1);
@@ -222,7 +208,7 @@ public class AddPersonDialog {
 
         // Кнопки
         HBox buttonBox = new HBox(10);
-        buttonBox.setPadding(new Insets(10, 0, 0, 0));
+        buttonBox.setPadding(new Insets(0, 0, 5, 0));
         buttonBox.setAlignment(Pos.CENTER);
 
         Button saveBtn = new Button("Сохранить");
@@ -420,7 +406,8 @@ public class AddPersonDialog {
             }
         });
 
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 1000, 550);
+        scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
         dialog.setScene(scene);
         dialog.showAndWait();
     }
