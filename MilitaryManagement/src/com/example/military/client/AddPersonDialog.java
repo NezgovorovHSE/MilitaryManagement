@@ -5,6 +5,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -21,6 +22,13 @@ public class AddPersonDialog {
         dialog.initModality(Modality.WINDOW_MODAL);
         dialog.initOwner(owner);
         dialog.setTitle(isEditMode ? "Редактирование военнослужащего" : "Добавление военнослужащего");
+
+        try {
+            Image icon = new Image("file:star-icon.png");
+            dialog.getIcons().add(icon);
+        } catch (Exception e) {
+            // игнорируем, если файл не найден
+        }
 
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(15));
