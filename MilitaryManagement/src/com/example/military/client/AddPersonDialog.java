@@ -30,6 +30,12 @@ public class AddPersonDialog {
             // игнорируем, если файл не найден
         }
 
+        if (isEditMode) {
+            dialog.setOnCloseRequest(event -> {
+                connector.unlockRecord(existingPerson.getId());
+            });
+        }
+
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(15));
 
