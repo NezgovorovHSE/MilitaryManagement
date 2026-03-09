@@ -308,3 +308,86 @@
     -fx-border-color: #7C8A5A;
     -fx-opacity: 1;
 }
+
+.success-alert .label {
+    -fx-text-fill: #E5E9F0;
+}
+/* Стиль для диалоговых окон */
+.dialog-pane {
+    -fx-background-color: #1A1E24;
+}
+
+.dialog-pane .graphic-container {
+    -fx-padding: 0;
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-max-width: 0;
+    -fx-opacity: 0;
+}
+
+.dialog-pane .content {
+    -fx-text-fill: #E5E9F0;
+    -fx-font-size: 24px;  /* увеличен в 2 раза */
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+    -fx-padding: 20px;
+}
+
+.dialog-pane .label {
+    -fx-text-fill: #E5E9F0;
+    -fx-font-size: 14px;
+    -fx-padding: 10px;
+}
+
+.dialog-pane .content.label {
+    -fx-text-fill: #E5E9F0;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+    -fx-padding: 20px 20px 10px 20px;
+}
+
+.dialog-pane .button-bar {
+    -fx-background-color: #1A1E24;
+    -fx-padding: 5px 20px 20px 20px;
+    -fx-alignment: CENTER;
+}
+
+.dialog-pane > .button-bar {
+    -fx-alignment: center;
+}
+
+.dialog-pane > .button-bar > .container {
+    -fx-alignment: center;
+    -fx-padding: 5px 20px 20px 20px;
+}
+
+.dialog-pane .button-bar .container {
+    -fx-alignment: CENTER;  /* центрируем контейнер с кнопками */
+}
+
+.dialog-pane .button {
+    -fx-background-color: #4285B4;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+
+    -fx-padding: 8px 30px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-cursor: hand;
+    -fx-min-width: 100px;
+    -fx-alignment: center;  /* текст по центру кнопки */
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: #5a9fd4;  /* светлее при наведении */
+}
+
+.dialog-pane .button:pressed {
+    -fx-background-color: #2b5f8a;  /* темнее при нажатии */
+}
+
+.dialog-pane .button .text {
+    -fx-text-alignment: center;
+}
