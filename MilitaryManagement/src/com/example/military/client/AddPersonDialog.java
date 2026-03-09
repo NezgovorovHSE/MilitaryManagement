@@ -11,6 +11,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AddPersonDialog {
 
@@ -219,7 +221,16 @@ public class AddPersonDialog {
         });
 
         buttonBox.getChildren().addAll(saveBtn, cancelBtn);
-        root.setBottom(buttonBox);
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 12px;");
+        errorLabel.setWrapText(true);
+        errorLabel.setMaxWidth(900);
+        errorLabel.setVisible(false);
+
+        VBox bottomBox = new VBox(5);
+        bottomBox.getChildren().addAll(errorLabel, buttonBox);
+        root.setBottom(bottomBox);
 
         // Обработчик выбора типа (для режима добавления)
         typeBox.setOnAction(ev -> {
@@ -302,6 +313,27 @@ public class AddPersonDialog {
                 String company = companyField.getText().trim();
                 String rank = rankField.getText().trim();
                 String salaryText = salaryField.getText().trim();
+
+                // Валидация форматов
+                String errors = validateFields(
+                        selectedType,
+                        birthDateField.getText().trim(),
+                        enlistmentDateField.getText().trim(),
+                        contractDateField.getText().trim(),
+                        salaryField.getText().trim(),
+                        yearsField.getText().trim(),
+                        cmdAllowanceField.getText().trim(),
+                        prizeField.getText().trim(),
+                        awardedAllowanceField.getText().trim()
+                );
+
+                if (!errors.isEmpty()) {
+                    errorLabel.setText("Скорректируйте формат: " + errors);
+                    errorLabel.setVisible(true);
+                    return;
+                } else {
+                    errorLabel.setVisible(false);
+                }
 
                 if (lastName.isEmpty() || company.isEmpty() || rank.isEmpty() || salaryText.isEmpty()) {
                     showAlert("Ошибка", "Заполните обязательные поля");
@@ -386,7 +418,7 @@ public class AddPersonDialog {
                         connector.unlockRecord(existingPerson.getId());
                         dialog.close();
                         if (onSuccess != null) onSuccess.run();
-                        showAlert("Успех", "Запись обновлена");
+                        showAlert("", "Запись успешно обновлена");
                     } else {
                         showAlert("Ошибка", "Не удалось обновить запись");
                     }
@@ -395,13 +427,14 @@ public class AddPersonDialog {
                     if (id > 0) {
                         dialog.close();
                         if (onSuccess != null) onSuccess.run();
-                        showAlert("Успех", "Добавлен с ID: " + id);
+                        showAlert("","Запись успешно добавлена");
                     } else {
                         showAlert("Ошибка", "Не удалось добавить");
                     }
                 }
             } catch (Exception ex) {
-                showAlert("Ошибка", "Проверьте введённые данные");
+                errorLabel.setText("Ошибка: " + ex.getMessage());
+                errorLabel.setVisible(true);
                 ex.printStackTrace();
             }
         });
@@ -410,6 +443,77 @@ public class AddPersonDialog {
         scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
         dialog.setScene(scene);
         dialog.showAndWait();
+    }
+
+    private static String validateFields(String selectedType,
+                                         String birthDateText, String enlistmentDateText,
+                                         String contractDateText,
+                                         String salaryText, String yearsText,
+                                         String cmdAllowanceText, String prizeText,
+                                         String awardedAllowanceText) {
+        List<String> errors = new ArrayList<>();
+
+        // Проверка дат
+        if (!birthDateText.isEmpty() && !isValidDate(birthDateText)) {
+            errors.add("Дата рождения - дд.мм.гггг");
+        }
+        if (!enlistmentDateText.isEmpty() && !isValidDate(enlistmentDateText)) {
+            errors.add("Дата поступления - дд.мм.гггг");
+        }
+        if (selectedType.equals("Контрактники") &&
+                !contractDateText.isEmpty() && !isValidDate(contractDateText)) {
+            errors.add("Дата договора - дд.мм.гггг");
+        }
+
+        // Проверка чисел
+        if (!isValidNumber(salaryText)) {
+            errors.add("Зарплата - число");
+        }
+        if (selectedType.equals("Командование")) {
+            if (!isValidInteger(yearsText)) {
+                errors.add("Выслуга лет - целое число");
+            }
+            if (!isValidNumber(cmdAllowanceText)) {
+                errors.add("Надбавка (командование) - число");
+            }
+        }
+        if (selectedType.equals("Награждённые")) {
+            if (!isValidNumber(prizeText)) {
+                errors.add("Премия - число");
+            }
+            if (!isValidNumber(awardedAllowanceText)) {
+                errors.add("Надбавка (награда) - число");
+            }
+        }
+
+        return String.join("; ", errors);
+    }
+
+    private static boolean isValidDate(String text) {
+        try {
+            DateTimeFormatter.ofPattern("dd.MM.yyyy").parse(text);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isValidNumber(String text) {
+        try {
+            Double.parseDouble(text.replace(",", "."));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isValidInteger(String text) {
+        try {
+            Integer.parseInt(text);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private static void showAlert(String title, String message) {
