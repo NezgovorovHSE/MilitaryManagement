@@ -3,6 +3,7 @@ package com.example.military.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,8 +46,17 @@ public class ServerMain {
         // Подключаемся к базе данных
         dbManager = new DatabaseManager(config.getDbFile());
 
+        AuditLogger.init(dbManager.getConnection());
+
         // Создаём сервис
         service = new MilitaryService(dbManager, logger);
+
+        // Временно, для обновления паролей
+        try {
+            dbManager.updatePasswords();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
         // Создаём пул потоков
         threadPool = Executors.newFixedThreadPool(config.getMaxThreads());
@@ -106,6 +116,9 @@ public class ServerMain {
         if (dbManager != null) {
             dbManager.close();
         }
+
+        // Закрываем логгер аудита
+        AuditLogger.close();
 
         // Закрываем логгер
         if (logger != null) {
