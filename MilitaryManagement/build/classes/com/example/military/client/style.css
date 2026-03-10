@@ -326,10 +326,8 @@
 }
 
 .dialog-pane .content {
-    -fx-text-fill: #E5E9F0;
-    -fx-font-size: 24px;  /* увеличен в 2 раза */
-    -fx-font-weight: bold;
-    -fx-alignment: CENTER;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
     -fx-padding: 20px;
 }
 
@@ -342,24 +340,23 @@
 }
 
 .dialog-pane .label {
+    -fx-font-weight: normal;
     -fx-text-fill: #E5E9F0;
     -fx-font-size: 14px;
-    -fx-padding: 10px;
 }
 
 .dialog-pane .content.label {
     -fx-text-fill: #E5E9F0;
     -fx-font-size: 24px;
-    -fx-font-weight: bold;
+    -fx-font-weight: normal;
     -fx-alignment: center;
     -fx-text-alignment: center;
     -fx-padding: 20px 20px 10px 20px;
 }
 
 .dialog-pane .button-bar {
-    -fx-background-color: #1A1E24;
+    -fx-alignment: center;
     -fx-padding: 5px 20px 20px 20px;
-    -fx-alignment: CENTER;
 }
 
 .dialog-pane > .button-bar {
@@ -372,30 +369,145 @@
 }
 
 .dialog-pane .button-bar .container {
-    -fx-alignment: CENTER;  /* центрируем контейнер с кнопками */
+    -fx-alignment: center;  /* центрируем контейнер с кнопками */
 }
 
 .dialog-pane .button {
     -fx-background-color: #4285B4;
     -fx-text-fill: white;
     -fx-font-size: 14px;
-
+    -fx-font-weight: normal;  /* не жирный */
     -fx-padding: 8px 30px;
     -fx-background-radius: 0;
     -fx-border-radius: 0;
     -fx-cursor: hand;
     -fx-min-width: 100px;
-    -fx-alignment: center;  /* текст по центру кнопки */
+    -fx-alignment: center;
+    -fx-content-display: center;
 }
 
 .dialog-pane .button:hover {
-    -fx-background-color: #5a9fd4;  /* светлее при наведении */
+    -fx-background-color: #5a9fd4;
 }
 
 .dialog-pane .button:pressed {
-    -fx-background-color: #2b5f8a;  /* темнее при нажатии */
+    -fx-background-color: #2b5f8a;
 }
 
 .dialog-pane .button .text {
     -fx-text-alignment: center;
+}
+
+/* Стиль для всех информационных диалогов */
+.info-dialog {
+    -fx-background-color: #1A1E24;
+}
+
+.info-dialog .label {
+    -fx-text-fill: #E5E9F0;
+    -fx-font-size: 14px;
+}
+
+.info-dialog .button-bar {
+    -fx-alignment: center;
+    -fx-padding: 10px 20px 20px 20px;
+}
+
+.info-dialog .button {
+    -fx-background-color: #4285B4;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: normal;
+    -fx-padding: 8px 30px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-cursor: hand;
+    -fx-min-width: 100px;
+    -fx-alignment: center;
+}
+
+.info-dialog .button:hover {
+    -fx-background-color: #5a9fd4;
+}
+
+.info-dialog .button:pressed {
+    -fx-background-color: #2b5f8a;
+}
+
+/* Стили для окна логина */
+.login-root {
+    -fx-background-color: #1A1E24;
+}
+
+.login-title {
+    -fx-text-fill: #E5E9F0;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 20px 0;
+}
+
+.login-label {
+    -fx-text-fill: #E5E9F0;
+    -fx-font-size: 14px;
+}
+
+.login-field {
+    -fx-background-color: #23282F;
+    -fx-border-color: #3A4049;
+    -fx-border-width: 1px;
+    -fx-text-fill: #E5E9F0;
+    -fx-padding: 8px;
+    -fx-font-size: 14px;
+}
+
+.login-field:focused {
+    -fx-border-color: #4285B4;
+}
+
+.login-error {
+    -fx-text-fill: #ff6b6b;
+    -fx-font-size: 12px;
+    -fx-padding: 5px 0;
+}
+
+.login-button {
+    -fx-background-color: #4285B4;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 16px;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-cursor: hand;
+    -fx-min-width: 100px;
+    -fx-alignment: center;  /* ← добавить */
+    -fx-content-display: center;  /* ← добавить */
+    -fx-text-alignment: center;  /* ← добавить */
+}
+
+.login-button:hover {
+    -fx-background-color: #5a9fd4;
+}
+
+.login-button:pressed {
+    -fx-background-color: #2b5f8a;
+}
+
+.dialog-pane .cancel-button {
+    -fx-background-color: #4a4a4a;
+}
+
+.dialog-pane .cancel-button:hover {
+    -fx-background-color: #5a5a5a;
+}
+
+.logout-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #A56A6A;
+    -fx-text-fill: #A56A6A;
+}
+
+.logout-button:hover {
+    -fx-background-color: #A56A6A;
+    -fx-text-fill: white;
 }
