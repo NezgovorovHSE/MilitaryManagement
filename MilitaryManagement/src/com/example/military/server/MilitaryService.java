@@ -4,8 +4,11 @@ import com.example.military.model.MilitaryPerson;
 import com.example.military.model.User;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+
 
 public class MilitaryService {
     private final DatabaseManager dbManager;
@@ -19,17 +22,22 @@ public class MilitaryService {
     public User authenticate(String username, String password) {
         try {
             User user = dbManager.findUserByUsername(username);
-            if (user != null) {
-                // Проверяем пароль (пока простое сравнение, позже заменим на BCrypt)
-                if (checkPassword(password, user.getPasswordHash())) {
-                    AuditLogger.log(user.getId(), "АУТЕНТИФИКАЦИЯ", "Успешный вход");
-                    return user;
-                }
+            if (user != null && checkPassword(password, user.getPasswordHash())) {
+                AuditLogger.logLogin(user.getUsername(), "unknown", true);
+                return user;
             }
-            AuditLogger.log(null, "АУТЕНТИФИКАЦИЯ", "Неудачная попытка входа для: " + username);
-            return null;
         } catch (SQLException e) {
             logger.error("Ошибка аутентификации", e);
+        }
+        AuditLogger.logLogin(null, "unknown", false);
+        return null;
+    }
+
+    public User getUserById(int userId) {
+        try {
+            return dbManager.findUserById(userId);
+        } catch (SQLException e) {
+            logger.error("Ошибка загрузки пользователя ID=" + userId, e);
             return null;
         }
     }
