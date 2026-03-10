@@ -2,6 +2,8 @@ package com.example.military.server;
 
 import com.example.military.model.*;
 import com.example.military.shared.Protocol;
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -34,22 +36,17 @@ public class DatabaseManager {
         }
     }
 
-    public boolean unlockRecord(int recordId) throws SQLException {
-        System.out.println("🔓 Попытка разблокировки записи ID=" + recordId);
+    public boolean unlockRecord(int recordId, int userId) throws SQLException {
+        System.out.println("🔓 Попытка разблокировки записи ID=" + recordId + " пользователем " + userId);
 
-        String sql = "UPDATE personnel SET locked_by = NULL, locked_at = NULL WHERE id = ?";
+        String sql = "UPDATE personnel SET locked_by = NULL, locked_at = NULL WHERE id = ? AND locked_by = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, recordId);
+            pstmt.setInt(2, userId);
 
             int affected = pstmt.executeUpdate();
             System.out.println("Разблокировано строк: " + affected);
-
-            checkLockOwner(recordId);
-
             return affected > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
@@ -143,6 +140,55 @@ public class DatabaseManager {
                         "awarded_allowance REAL" +
                         ");";
 
+        // Таблица пользователей
+        String createUsersTable = """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    full_name TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                """;
+
+// Таблица логов аудита
+        String createAuditLogTable = """
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    user_id INTEGER,
+                    action TEXT NOT NULL,
+                    details TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                );
+                """;
+
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(createUsersTable);
+            stmt.execute(createAuditLogTable);
+
+            // Добавим тестовых пользователей, если таблица пуста
+            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM users");
+            if (rs.next() && rs.getInt(1) == 0) {
+                //Создаем пользователей
+                String hash1 = BCrypt.hashpw("kD9#mP2$rT5@", BCrypt.gensalt());  // 12 символов
+                String hash2 = BCrypt.hashpw("xL7&nR4$wQ9*", BCrypt.gensalt());  // 12 символов
+
+                String insertUsers = "INSERT INTO users (username, password_hash, full_name) VALUES " +
+                        "('user001@arm.ru', '" + hash1 + "', 'Сотрудник №1'), " +
+                        "('user002@arm.ru', '" + hash2 + "', 'Сотрудник №2')";
+                stmt.execute(insertUsers);
+
+                System.out.println("✅ Созданы тестовые пользователи:");
+                System.out.println("   user001@arm.ru / kD9#mP2$rT5@");
+                System.out.println("   user002@arm.ru / xL7&nR4$wQ9*");
+            } else {
+                System.out.println("👥 Пользователи уже существуют, пропускаем создание");
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Ошибка при создании пользователей: " + e.getMessage());
+        }
+
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(createPersonnelTable);
 
@@ -162,9 +208,38 @@ public class DatabaseManager {
         }
     }
 
-    /**
-     * Сохранение военнослужащего в БД
-     */
+    public void updatePasswords() throws SQLException {
+        String adminHash = BCrypt.hashpw("admin", BCrypt.gensalt());
+        String userHash = BCrypt.hashpw("password", BCrypt.gensalt());
+
+        // Обновляем пароль admin
+        String updateAdmin = "UPDATE users SET password_hash = ? WHERE username = 'admin'";
+        try (PreparedStatement pstmt = connection.prepareStatement(updateAdmin)) {
+            pstmt.setString(1, adminHash);
+            pstmt.executeUpdate();
+        }
+
+        // Обновляем пароли для остальных пользователей
+        String updateOthers = "UPDATE users SET password_hash = ? WHERE username IN ('ivanov', 'petrov')";
+        try (PreparedStatement pstmt = connection.prepareStatement(updateOthers)) {
+            pstmt.setString(1, userHash);
+            pstmt.executeUpdate();
+        }
+
+        System.out.println("✅ Пароли пользователей обновлены");
+    }
+
+    public void clearUsers() throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            // Очищаем таблицу users
+            stmt.execute("DELETE FROM users");
+            System.out.println("✅ Таблица users очищена");
+
+            // Сбрасываем счётчик автоинкремента (опционально)
+            stmt.execute("DELETE FROM sqlite_sequence WHERE name='users'");
+        }
+    }
+
     public int savePerson(MilitaryPerson person) throws SQLException {
         String sql =
                 "INSERT INTO personnel (" +
@@ -476,6 +551,28 @@ public class DatabaseManager {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public User findUserByUsername(String username) throws SQLException {
+        String sql = "SELECT id, username, password_hash, full_name FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return new User(
+                        rs.getInt("id"),
+                        rs.getString("username"),
+                        rs.getString("full_name"),
+                        rs.getString("password_hash")  // временно используем это поле как пароль
+                );
+            }
+        }
+        return null;
     }
 
     /**
