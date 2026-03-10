@@ -339,7 +339,7 @@ public class AddPersonDialog {
                 }
 
                 if (lastName.isEmpty() || company.isEmpty() || rank.isEmpty() || salaryText.isEmpty()) {
-                    showAlert("Ошибка", "Заполните обязательные поля");
+                    showAlert(owner, "Ошибка", "Заполните обязательные поля");
                     return;
                 }
 
@@ -364,7 +364,7 @@ public class AddPersonDialog {
                                 positionField.getText().trim().isEmpty() ||
                                 yearsField.getText().trim().isEmpty() ||
                                 cmdAllowanceField.getText().trim().isEmpty()) {
-                            showAlert("Ошибка", "Заполните все поля командования");
+                            showAlert(owner, "Ошибка", "Заполните все поля командования");
                             return;
                         }
                         int years = Integer.parseInt(yearsField.getText().trim());
@@ -379,7 +379,7 @@ public class AddPersonDialog {
                     case "Контрактники":
                         if (periodField.getText().trim().isEmpty() ||
                                 protocolField.getText().trim().isEmpty()) {
-                            showAlert("Ошибка", "Заполните обязательные поля контрактника");
+                            showAlert(owner, "Ошибка", "Заполните обязательные поля контрактника");
                             return;
                         }
                         LocalDate contractDate = null;
@@ -397,7 +397,7 @@ public class AddPersonDialog {
                         if (awardNameField.getText().trim().isEmpty() ||
                                 prizeField.getText().trim().isEmpty() ||
                                 awardedAllowanceField.getText().trim().isEmpty()) {
-                            showAlert("Ошибка", "Заполните все поля награждённого");
+                            showAlert(owner, "Ошибка", "Заполните все поля награждённого");
                             return;
                         }
                         double prize = Double.parseDouble(prizeField.getText().trim());
@@ -421,18 +421,18 @@ public class AddPersonDialog {
                         connector.unlockRecord(existingPerson.getId());
                         dialog.close();
                         if (onSuccess != null) onSuccess.run();
-                        showAlert("", "Запись успешно обновлена");
+                        showAlert(owner, "", "Запись успешно обновлена");
                     } else {
-                        showAlert("Ошибка", "Не удалось обновить запись");
+                        showAlert(owner, "Ошибка", "Не удалось обновить запись");
                     }
                 } else {
                     int id = connector.addPerson(personToSave);
                     if (id > 0) {
                         dialog.close();
                         if (onSuccess != null) onSuccess.run();
-                        showAlert("","Запись успешно добавлена");
+                        showAlert(owner, "","Запись успешно создана");
                     } else {
-                        showAlert("Ошибка", "Не удалось добавить");
+                        showAlert(owner, "Ошибка", "Не удалось создать запись");
                     }
                 }
             } catch (Exception ex) {
@@ -519,11 +519,17 @@ public class AddPersonDialog {
         }
     }
 
-    private static void showAlert(String title, String message) {
+    private static void showAlert(Stage owner, String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+
+        if (owner != null) {
+            alert.initOwner(owner);
+            alert.initModality(Modality.WINDOW_MODAL);
+        }
+
         alert.showAndWait();
     }
 }
