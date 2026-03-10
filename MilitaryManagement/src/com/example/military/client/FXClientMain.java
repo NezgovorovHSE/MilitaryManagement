@@ -1,10 +1,7 @@
 package com.example.military.client;
 
 import com.example.military.client.AddPersonDialog;
-import com.example.military.model.MilitaryPerson;
-import com.example.military.model.MilitaryCommand;
-import com.example.military.model.MilitaryContract;
-import com.example.military.model.MilitaryAwarded;
+import com.example.military.model.*;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -46,23 +43,42 @@ public class FXClientMain extends Application {
     private final Object dataLock = new Object();
     private boolean isRefreshing = false;
     private TextField searchField;
+    private User currentUser;
 
     @Override
     public void start(Stage primaryStage) {
-        startAutoRefresh(10);
+        System.out.println("=== start() вызван ===");
+        System.out.println("Текущий поток: " + Thread.currentThread().getName());
         this.primaryStage = primaryStage;
 
         try {
             // Инициализация подключения к серверу
             connector = new ServerConnector();
 
+            // Показываем окно входа
+            User loggedUser = LoginDialog.show(primaryStage, connector);
+            System.out.println("=== ВЕРНУЛИСЬ ИЗ LOGINDIALOG ===");
+            System.out.println("loggedUser = " + (loggedUser != null ? loggedUser.getFullName() : "null"));
+
+            if (loggedUser == null) {
+                System.out.println("Пользователь отменил вход, выходим");
+                Platform.exit();
+                return;
+            }
+            System.out.println("Продолжаем с пользователем: " + loggedUser.getFullName());
+
+            this.currentUser = loggedUser;
+
+            List<MilitaryPerson> testList = connector.getAllPersons();
+            System.out.println("Загружено записей после логина: " + (testList != null ? testList.size() : "null"));
+            System.out.println("Вошёл пользователь: " + loggedUser.getFullName());
+
             searchField = new TextField();
             searchField.setPromptText("Поиск...");
             searchField.getStyleClass().add("search-field");
             searchField.setPrefWidth(200);
-            searchField.setPromptText("Поиск...");
-            searchField.getStyleClass().add("search-field");
-            searchField.setPrefWidth(200);
+
+            startAutoRefresh(10);
 
             // Инициализация фильтра (ВАЖНО: до loadData!)
             filterCombo = new ComboBox<>();
@@ -79,7 +95,6 @@ public class FXClientMain extends Application {
             checkServerConnection();
 
             // Создание таблицы
-            //table = createTable();
             table = new TableView<>();
 // Обработчик двойного клика для редактирования
             table.setRowFactory(tv -> {
@@ -99,7 +114,7 @@ public class FXClientMain extends Application {
             });
 
             updateTableColumns(currentFilterType);
-            // Загрузка данных (теперь filterCombo уже существует)
+
             loadData();
 
             // Верхняя панель с фильтром и кнопками в один ряд
@@ -128,10 +143,16 @@ public class FXClientMain extends Application {
             filterGroup.setAlignment(Pos.CENTER_LEFT);
             filterGroup.getChildren().addAll(new Label("Фильтр:"), filterCombo);
 
+            Button btnLogout = new Button("🚪 Выйти");
+            btnLogout.setOnAction(e -> logout());
+
+            Label userLabel = new Label(currentUser.getFullName());
+            userLabel.setStyle("-fx-text-fill: #9AA5B5; -fx-padding: 0 10 0 0;");
+
 // Группа кнопок
             HBox buttonGroup = new HBox(10);
             buttonGroup.setAlignment(Pos.CENTER_LEFT);
-            buttonGroup.getChildren().addAll(btnAdd, btnDelete, btnImport, btnExport);
+            buttonGroup.getChildren().addAll(userLabel, btnAdd, btnDelete, btnImport, btnExport, btnLogout);
 
 // Собираем всё
             topPanel.getChildren().addAll(filterGroup, searchField, buttonGroup);
@@ -164,6 +185,34 @@ public class FXClientMain extends Application {
     }
 
     private Timer refreshTimer;
+
+    private void logout() {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Выход");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Вы уверены, что хотите выйти?");
+
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            connector.logout();
+            connector.reset();
+
+            // Закрываем текущее окно
+            primaryStage.close();
+
+            // Показываем новое окно логина на том же Stage
+            User newUser = LoginDialog.show(new Stage(), connector);
+            if (newUser != null) {
+                // Обновляем текущего пользователя
+                this.currentUser = newUser;
+                // Очищаем таблицу и перезагружаем данные
+                loadData();
+                // Показываем текущее окно заново
+                primaryStage.show();
+            } else {
+                Platform.exit();
+            }
+        }
+    }
 
     private void startAutoRefresh(int seconds) {
         refreshTimer = new Timer(true);
