@@ -1,6 +1,9 @@
 package com.example.military.server;
 
 import com.example.military.model.MilitaryPerson;
+import com.example.military.model.User;
+import org.mindrot.jbcrypt.BCrypt;
+
 import java.sql.SQLException;
 import java.util.List;
 
@@ -11,6 +14,34 @@ public class MilitaryService {
     public MilitaryService(DatabaseManager dbManager, ServerLogger logger) {
         this.dbManager = dbManager;
         this.logger = logger;
+    }
+
+    public User authenticate(String username, String password) {
+        try {
+            User user = dbManager.findUserByUsername(username);
+            if (user != null) {
+                // Проверяем пароль (пока простое сравнение, позже заменим на BCrypt)
+                if (checkPassword(password, user.getPasswordHash())) {
+                    AuditLogger.log(user.getId(), "АУТЕНТИФИКАЦИЯ", "Успешный вход");
+                    return user;
+                }
+            }
+            AuditLogger.log(null, "АУТЕНТИФИКАЦИЯ", "Неудачная попытка входа для: " + username);
+            return null;
+        } catch (SQLException e) {
+            logger.error("Ошибка аутентификации", e);
+            return null;
+        }
+    }
+
+    private boolean checkPassword(String plainPassword, String hash) {
+        if (hash == null || hash.isEmpty()) return false;
+        try {
+            return BCrypt.checkpw(plainPassword, hash);
+        } catch (Exception e) {
+            logger.error("Ошибка проверки пароля", e);
+            return false;
+        }
     }
 
     /**
@@ -78,9 +109,9 @@ public class MilitaryService {
         }
     }
 
-    public boolean unlockRecord(int recordId) {
+    public boolean unlockRecord(int recordId, int userId) {
         try {
-            return dbManager.unlockRecord(recordId);
+            return dbManager.unlockRecord(recordId, userId);
         } catch (SQLException e) {
             logger.error("Ошибка разблокировки записи " + recordId, e);
             return false;
