@@ -66,6 +66,24 @@ public class DatabaseManager {
         }
     }
 
+    public User findUserById(int userId) throws SQLException {
+        String sql = "SELECT id, username, password_hash, full_name FROM users WHERE id = ?";
+        try (PreparedStatement pstmt = this.connection.prepareStatement(sql)) {  // используем this.connection
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return new User(
+                        rs.getInt("id"),
+                        rs.getString("username"),
+                        rs.getString("full_name"),
+                        rs.getString("password_hash")
+                );
+            }
+        }
+        return null;
+    }
+
     public Integer getLockOwner(int recordId) {
         String sql = "SELECT locked_by FROM personnel WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
