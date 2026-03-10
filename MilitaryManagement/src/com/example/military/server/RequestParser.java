@@ -18,10 +18,22 @@ public class RequestParser {
      * Извлекает данные военнослужащего из запроса ADD
      */
     public static MilitaryPerson extractPersonFromAddRequest(String requestJson) {
-        JsonObject data = JsonConverter.extractData(requestJson);
-        if (data != null) {
-            String personJson = data.toString();
-            return JsonConverter.fromJson(personJson);
+        JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
+        JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
+
+        if (data != null && data.has("person")) {
+            JsonObject personData = data.getAsJsonObject("person");
+            return JsonConverter.fromJson(personData.toString());
+        }
+        return null;
+    }
+
+    public static Integer extractUserIdFromRequest(String requestJson) {
+        JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
+        JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
+
+        if (data != null && data.has("userId")) {
+            return data.get("userId").getAsInt();
         }
         return null;
     }
