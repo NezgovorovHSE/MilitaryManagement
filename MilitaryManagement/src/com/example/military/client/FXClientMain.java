@@ -30,6 +30,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.CheckBox;
 import java.util.Timer;
 import java.util.TimerTask;
+import javafx.scene.layout.Region;
 
 public class FXClientMain extends Application {
 
@@ -106,7 +107,7 @@ public class FXClientMain extends Application {
                         if (connector.lockRecord(selected.getId())) {
                             showEditDialog(selected);
                         } else {
-                            showAlert("Занято", "Запись редактируется другим пользователем");
+                            showInfoDialog(primaryStage, "Занято", "Запись редактируется другим пользователем");
                         }
                     }
                 });
@@ -143,20 +144,28 @@ public class FXClientMain extends Application {
             filterGroup.setAlignment(Pos.CENTER_LEFT);
             filterGroup.getChildren().addAll(new Label("Фильтр:"), filterCombo);
 
-            Button btnLogout = new Button("🚪 Выйти");
+            Button btnLogout = new Button("➜] Выйти");
             btnLogout.setOnAction(e -> logout());
 
             Label userLabel = new Label(currentUser.getFullName());
-            userLabel.setStyle("-fx-text-fill: #9AA5B5; -fx-padding: 0 10 0 0;");
+            userLabel.setStyle("-fx-text-fill: #E5E9F0; -fx-font-weight: bold;");
 
 // Группа кнопок
-            HBox buttonGroup = new HBox(10);
-            buttonGroup.setAlignment(Pos.CENTER_LEFT);
-            buttonGroup.getChildren().addAll(userLabel, btnAdd, btnDelete, btnImport, btnExport, btnLogout);
+            HBox operationsGroup = new HBox(10);
+            operationsGroup.setAlignment(Pos.CENTER_LEFT);
+            operationsGroup.getChildren().addAll(btnAdd, btnDelete, btnImport, btnExport);
+
+// Растягивающийся разделитель (заполняет пространство между левой и правой группами)
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, Priority.ALWAYS);
+
+            HBox rightGroup = new HBox(10);
+            rightGroup.setAlignment(Pos.CENTER_RIGHT);
+
+            rightGroup.getChildren().addAll(userLabel, btnLogout);
 
 // Собираем всё
-            topPanel.getChildren().addAll(filterGroup, searchField, buttonGroup);
-
+            topPanel.getChildren().addAll(filterGroup, operationsGroup, spacer, rightGroup);
             root.setTop(topPanel);
 
             Label filterLabel = new Label("Фильтр:");
@@ -187,19 +196,14 @@ public class FXClientMain extends Application {
     private Timer refreshTimer;
 
     private void logout() {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Выход");
-        confirm.setHeaderText(null);
-        confirm.setContentText("Вы уверены, что хотите выйти?");
-
-        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        showConfirmDialog(primaryStage, "Подтверждение", "Вы уверены, что хотите выйти?", () -> {
             connector.logout();
             connector.reset();
 
             // Закрываем текущее окно
             primaryStage.close();
 
-            // Показываем новое окно логина на том же Stage
+            // Показываем новое окно логина
             User newUser = LoginDialog.show(new Stage(), connector);
             if (newUser != null) {
                 // Обновляем текущего пользователя
@@ -211,7 +215,7 @@ public class FXClientMain extends Application {
             } else {
                 Platform.exit();
             }
-        }
+        }); // ← закрываем вызов showConfirmDialog
     }
 
     private void startAutoRefresh(int seconds) {
@@ -465,6 +469,9 @@ public class FXClientMain extends Application {
             alert.setTitle("Предупреждение");
             alert.setHeaderText("Сервер недоступен");
             alert.setContentText("Не удалось подключиться к серверу. Данные могут быть недоступны.");
+            if (primaryStage != null) {
+                alert.initOwner(primaryStage);
+            }
             alert.showAndWait();
         }
     }
@@ -650,11 +657,16 @@ public class FXClientMain extends Application {
         }
     }
 
-    private void showAlert(String title, String message) {
+    private void showAlert(Stage owner, String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+
+        if (owner != null) {
+            alert.initOwner(owner);
+        }
+
         alert.showAndWait();
     }
 
@@ -666,22 +678,24 @@ public class FXClientMain extends Application {
     private void deleteSelected() {
         MilitaryPerson selected = table.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showAlert("Предупреждение", "Выберите запись для удаления");
+            showInfoDialog(primaryStage, "Предупреждение", "Выберите запись для удаления");
             return;
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Подтверждение");
-        confirm.setHeaderText("Удаление записи");
+        confirm.setHeaderText(null);
         confirm.setContentText("Удалить " + selected.getLastName() + " (ID: " + selected.getId() + ")?");
+
+        confirm.initOwner(primaryStage);
 
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             boolean deleted = connector.deletePerson(selected.getId());
             if (deleted) {
-                showAlert("Успех", "Запись удалена");
+                showInfoDialog(primaryStage, "Успех", "Запись удалена");
                 loadData();
             } else {
-                showAlert("Ошибка", "Не удалось удалить запись");
+                showInfoDialog(primaryStage, "Ошибка", "Не удалось удалить запись");
             }
         }
     }
@@ -765,6 +779,46 @@ public class FXClientMain extends Application {
         personData.setAll(searchResults);
     }
 
+    private void showInfoDialog(Stage owner, String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        // Применяем стиль
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+        dialogPane.getStyleClass().add("info-dialog");
+
+        // Центрируем
+        if (owner != null) {
+            alert.initOwner(owner);
+        }
+
+        alert.showAndWait();
+    }
+
+    private void showConfirmDialog(Stage owner, String title, String message, Runnable onConfirm) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        // Применяем стиль
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+        dialogPane.getStyleClass().add("info-dialog");
+
+        // Центрируем
+        if (owner != null) {
+            alert.initOwner(owner);
+        }
+
+        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            onConfirm.run();
+        }
+    }
+
     private boolean matchesFilter(MilitaryPerson p, String filter) {
         if (filter.equals("Все записи")) return true;
         if (filter.equals("Военнослужащие") && p.getClass() == MilitaryPerson.class) return true;
@@ -832,17 +886,17 @@ public class FXClientMain extends Application {
         if (file != null) {
             int added = connector.importFromFile(file.getAbsolutePath());
             if (added >= 0) {
-                showAlert("Импорт завершен", "Добавлено записей: " + added);
+                showInfoDialog(primaryStage, "Импорт завершен", "Добавлено записей: " + added);
                 loadData();
             } else {
-                showAlert("Ошибка", "Не удалось импортировать файл");
+                showInfoDialog(primaryStage, "Ошибка", "Не удалось импортировать файл");
             }
         }
     }
 
     private void showExportDialog() {
         if (personData == null || personData.isEmpty()) {
-            showAlert("Экспорт", "Нет данных для экспорта");
+            showInfoDialog(primaryStage, "Экспорт", "Нет данных для экспорта");
             return;
         }
 
@@ -857,9 +911,9 @@ public class FXClientMain extends Application {
             boolean success = connector.exportToFile(file.getAbsolutePath(),
                     new ArrayList<>(personData));
             if (success) {
-                showAlert("Экспорт завершен", "Файл сохранен:\n" + file.getAbsolutePath());
+                showInfoDialog(primaryStage, "Экспорт завершен", "Файл сохранен:\n" + file.getAbsolutePath());
             } else {
-                showAlert("Ошибка", "Не удалось экспортировать данные");
+                showInfoDialog(primaryStage, "Ошибка", "Не удалось экспортировать данные");
             }
         }
     }
