@@ -5,8 +5,12 @@ package com.example.military.shared;
  */
 public class Protocol {
 
+    public static final String CMD_LOGIN = "LOGIN";
+    public static final String CMD_LOGOUT = "LOGOUT";
+
     // Команды от клиента к серверу
     public static final String CMD_ADD = "ADD";                 // Добавить военнослужащего
+    public static final String CMD_UPDATE = "UPDATE";
     public static final String CMD_GET_ALL = "GET_ALL";        // Получить всех
     public static final String CMD_GET_BY_ID = "GET_BY_ID";    // Получить по индексу
     public static final String CMD_DELETE = "DELETE";          // Удалить
