@@ -2,13 +2,13 @@ package com.example.military.client;
 
 import com.example.military.model.User;
 import com.google.gson.JsonObject;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.image.Image;
+import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -18,16 +18,24 @@ public class LoginDialog {
         Stage dialog = new Stage();
         dialog.initModality(Modality.WINDOW_MODAL);
         dialog.initOwner(owner);
-        dialog.setTitle("Вход в систему");
+        dialog.setTitle("АРМ «Военный состав»");
+
+        try {
+            Image icon = new Image("file:star-icon.png");
+            dialog.getIcons().add(icon);
+        } catch (Exception e) {
+            // игнорируем
+        }
 
         // Основной контейнер
         VBox root = new VBox(15);
         root.setPadding(new Insets(20));
         root.setAlignment(Pos.CENTER);
+        root.getStyleClass().add("login-root");  // для CSS
 
         // Заголовок
-        Label titleLabel = new Label("АРМ «Воинский учёт»");
-        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        Label titleLabel = new Label("Вход в систему");
+        titleLabel.getStyleClass().add("login-title");
 
         // Форма входа
         GridPane grid = new GridPane();
@@ -35,23 +43,33 @@ public class LoginDialog {
         grid.setVgap(10);
         grid.setAlignment(Pos.CENTER);
 
-        Label userLabel = new Label("Пользователь:");
-        TextField userField = new TextField();
-        userField.setPromptText("Имя пользователя");
-        userField.setPrefWidth(200);
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setPrefWidth(225);  // ширина колонки = ширина поля
+        col1.setMinWidth(225);
+        col1.setMaxWidth(225);  // колонка будет растягиваться
+        grid.getColumnConstraints().add(col1);
 
-        Label passLabel = new Label("Пароль:");
+        TextField userField = new TextField();
+        userField.setPromptText("Логин");  // меняем текст
+        userField.setPrefWidth(150);  // увеличиваем ширину в 1.5 раза (было 200)
+        userField.getStyleClass().add("login-field");
+
         PasswordField passField = new PasswordField();
         passField.setPromptText("Пароль");
+        passField.setPrefWidth(150);  // увеличиваем ширину в 1.5 раза
+        passField.getStyleClass().add("login-field");
 
-        grid.add(userLabel, 0, 0);
-        grid.add(userField, 1, 0);
-        grid.add(passLabel, 0, 1);
-        grid.add(passField, 1, 1);
+        grid.add(userField, 0, 0, 2, 1);  // colspan=2, чтобы поле заняло всю ширину
+        grid.add(passField, 0, 1, 2, 1);
+
+        userField.setFocusTraversable(false);
+        Platform.runLater(() -> {
+            root.requestFocus();  // фокус на корневой контейнер
+        });
 
         // Метка для ошибок
         Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: #ff6b6b;");
+        errorLabel.getStyleClass().add("login-error");
         errorLabel.setVisible(false);
 
         // Кнопки
@@ -59,14 +77,19 @@ public class LoginDialog {
         buttonBox.setAlignment(Pos.CENTER);
 
         Button loginBtn = new Button("Войти");
-        Button cancelBtn = new Button("Отмена");
-
+        loginBtn.getStyleClass().add("login-button");
         loginBtn.setPrefWidth(100);
+
+        Button cancelBtn = new Button("Отмена");
+        cancelBtn.getStyleClass().add("login-button");
         cancelBtn.setPrefWidth(100);
 
         buttonBox.getChildren().addAll(loginBtn, cancelBtn);
-
         root.getChildren().addAll(titleLabel, grid, errorLabel, buttonBox);
+
+        Scene scene = new Scene(root, 400, 300);
+        scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+        dialog.setScene(scene);
 
         // Обработчики
         final User[] loggedUser = new User[1];
@@ -81,7 +104,7 @@ public class LoginDialog {
 
             if (username.isEmpty() || password.isEmpty()) {
                 System.out.println("❌ Пустые поля");
-                errorLabel.setText("Введите имя пользователя и пароль");
+                errorLabel.setText("Введите логин и пароль");
                 errorLabel.setVisible(true);
                 return;
             }
@@ -97,7 +120,7 @@ public class LoginDialog {
                 System.out.println("Окно логина закрыто");
             } else {
                 System.out.println("❌ Ошибка входа");
-                errorLabel.setText("Неверное имя пользователя или пароль");
+                errorLabel.setText("Неверный логин или пароль");
                 errorLabel.setVisible(true);
                 connector.reset();
             }
@@ -107,12 +130,12 @@ public class LoginDialog {
             dialog.close();
         });
 
-        // Нажатие Enter в поле пароля
         passField.setOnAction(loginBtn.getOnAction());
 
-        Scene scene = new Scene(root, 400, 300);
-        dialog.setScene(scene);
+        scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+
         dialog.showAndWait();
+
         System.out.println("=== ДИАЛОГ ЗАКРЫТ, возвращаем: " +
                 (loggedUser[0] != null ? loggedUser[0].getFullName() : "null"));
         return loggedUser[0];
