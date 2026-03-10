@@ -20,6 +20,7 @@ public class ClientHandler implements Runnable {
     private static int clientCounter = 0;
     private static final boolean AUTH_ENABLED = true;  // false - режим разработки, true - с аутентификацией
     private User currentUser = null;
+    private String clientInfo;
 
     public ClientHandler(Socket socket, MilitaryService service, ServerLogger logger) {
         this.clientSocket = socket;
@@ -30,7 +31,7 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        String clientInfo = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
+        this.clientInfo = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
         logger.logClientAction(clientInfo, "Клиент #" + clientId + " подключился");
 
         try (
@@ -65,6 +66,10 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private String getCurrentUsername() {
+        return currentUser != null ? currentUser.getUsername() : null;
+    }
+
     private String handleLockCommand(String requestJson) {
         System.out.println("=== handleLockCommand ===");
         System.out.println("currentUser = " + (currentUser != null ? currentUser.getId() : "null"));
@@ -83,9 +88,9 @@ public class ClientHandler implements Runnable {
 
             if (locked) {
                 if (person != null) {
-                    logUserAction("БЛОКИРОВКА", "Запись ID=" + recordId + ", Фамилия=" + person.getLastName());
+                    AuditLogger.logLock(getCurrentUsername(), person);
                 } else {
-                    logUserAction("БЛОКИРОВКА", "Запись ID=" + recordId);
+                    AuditLogger.log(getCurrentUsername(), "БЛОКИРОВКА", "Запись ID=" + recordId);
                 }
                 return ResponseBuilder.successWithMessage("Locked");
             } else {
@@ -115,7 +120,8 @@ public class ClientHandler implements Runnable {
             boolean unlocked = service.unlockRecord(recordId, userId);
 
             if (unlocked) {
-                logUserAction("РАЗБЛОКИРОВКА", "Запись ID=" + recordId + ", Фамилия=" + lastName);
+                String type = person != null ? AuditLogger.getTypeString(person) : "неизвестно";
+                AuditLogger.logUnlock(getCurrentUsername(), recordId, lastName, type);
                 return ResponseBuilder.successWithMessage("Unlocked");
             } else {
                 return ResponseBuilder.error("Not locked or wrong user");
@@ -167,6 +173,7 @@ public class ClientHandler implements Runnable {
                     added++;
                 }
             }
+            AuditLogger.logImport(getCurrentUsername(), filePath, added);
 
             return ResponseBuilder.successWithMessage("Импортировано: " + added);
 
@@ -186,11 +193,13 @@ public class ClientHandler implements Runnable {
 
             if (AUTH_ENABLED && !command.equals(Protocol.CMD_LOGIN)) {
                 JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
-                if (data == null || !data.has("userId")) {
-                    return ResponseBuilder.error("Требуется аутентификация");
+                if (data != null && data.has("userId")) {
+                    int userId = data.get("userId").getAsInt();
+                    if (currentUser == null || currentUser.getId() != userId) {
+                        // Загружаем пользователя по ID
+                        currentUser = service.getUserById(userId);
+                    }
                 }
-                int userId = data.get("userId").getAsInt();
-                // Здесь можно загрузить пользователя по ID, если нужно
             }
 
             switch (command) {
@@ -224,7 +233,7 @@ public class ClientHandler implements Runnable {
 
     private String handleLogoutCommand(String requestJson) {
         if (currentUser != null) {
-            logUserAction("ВЫХОД", "Пользователь " + currentUser.getFullName() + " вышел");
+            AuditLogger.logLogout(currentUser.getUsername());
             currentUser = null;
         }
         return ResponseBuilder.successWithMessage("Выход выполнен");
@@ -237,7 +246,7 @@ public class ClientHandler implements Runnable {
                 JsonObject responseData = new JsonObject();
                 responseData.addProperty("userId", 1);
                 responseData.addProperty("fullName", "Тестовый пользователь");
-                return ResponseBuilder.success(responseData); // здесь проблема!
+                return ResponseBuilder.success(responseData);
             }
 
             // Правильный способ извлечения данных
@@ -251,13 +260,16 @@ public class ClientHandler implements Runnable {
 
             if (user != null) {
                 this.currentUser = user;
+                String ip = clientInfo.split(":")[0];
+                AuditLogger.logLogin(user.getUsername(), ip, true);
 
-                // Создаём простую строку ответа вместо JsonObject
                 String responseString = "{\"userId\":" + user.getId() +
                         ",\"fullName\":\"" + user.getFullName() + "\"}";
                 return ResponseBuilder.success(responseString);
             } else {
-                return ResponseBuilder.error("Неверное имя пользователя или пароль");
+                String ip = clientInfo.split(":")[0];
+                AuditLogger.logLogin(null, ip, false);
+                return ResponseBuilder.error("Неверное имя пользователя или пароль"); // ← добавить
             }
         } catch (Exception e) {
             logger.error("Ошибка обработки логина", e);
@@ -282,10 +294,10 @@ public class ClientHandler implements Runnable {
         int id = service.addPerson(person);
 
         if (id > 0) {
-            logUserAction("ДОБАВЛЕНИЕ", "ID=" + id + ", " + person.getLastName());
+            AuditLogger.logAdd(getCurrentUsername(), person, id);
             return ResponseBuilder.successWithMessage("Военнослужащий добавлен с ID: " + id);
         } else {
-            logUserAction("ОШИБКА_ДОБАВЛЕНИЯ", person.getLastName());
+            AuditLogger.log(getCurrentUsername(), "ОШИБКА_ДОБАВЛЕНИЯ", "Не удалось добавить: " + person.getLastName());
             return ResponseBuilder.error("Ошибка при добавлении военнослужащего");
         }
     }
@@ -300,7 +312,7 @@ public class ClientHandler implements Runnable {
      */
     private String handleGetAllCommand() {
         List<MilitaryPerson> list = service.getAllPersons();
-        AuditLogger.log(currentUser.getId(), "ПРОСМОТР", "Загружено записей: " + list.size());
+        AuditLogger.log(getCurrentUsername(), "ПРОСМОТР", "Загружено записей: " + list.size());
         return ResponseBuilder.personList(list);
     }
 
@@ -339,10 +351,10 @@ public class ClientHandler implements Runnable {
             boolean updated = service.updatePerson(newPerson);
 
             if (updated) {
-                logUserAction("ОБНОВЛЕНИЕ", "ID=" + newPerson.getId() + ", " + newPerson.getLastName());
+                AuditLogger.logUpdate(getCurrentUsername(), oldPerson, newPerson);
                 return ResponseBuilder.successWithMessage("Updated");
             } else {
-                logUserAction("ОШИБКА_ОБНОВЛЕНИЯ", "ID=" + newPerson.getId());
+                AuditLogger.log(getCurrentUsername(), "ОШИБКА_ОБНОВЛЕНИЯ", "ID=" + newPerson.getId());
                 return ResponseBuilder.error("Update failed");
             }
         } catch (Exception e) {
@@ -368,13 +380,13 @@ public class ClientHandler implements Runnable {
 
         if (deleted) {
             if (person != null) {
-                logUserAction("УДАЛЕНИЕ", "ID=" + id + ", " + person.getLastName());
+                AuditLogger.logDelete(getCurrentUsername(), person);
             } else {
-                logUserAction("УДАЛЕНИЕ", "ID=" + id + " (запись не найдена)");
+                AuditLogger.log(getCurrentUsername(), "УДАЛЕНИЕ", "ID=" + id + " (запись не найдена)");
             }
             return ResponseBuilder.successWithMessage("Удалено");
         } else {
-            logUserAction("ОШИБКА_УДАЛЕНИЯ", "ID=" + id);
+            AuditLogger.log(getCurrentUsername(), "ОШИБКА_УДАЛЕНИЯ", "ID=" + id);
             return ResponseBuilder.error("Не найдено");
         }
     }
