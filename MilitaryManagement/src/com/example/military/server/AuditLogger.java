@@ -1,5 +1,7 @@
 package com.example.military.server;
 
+import com.example.military.model.*;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -22,6 +24,51 @@ public class AuditLogger {
 
     public static void init(Connection conn) {
         connection = conn;
+    }
+
+    public static void logUpdate(User user, MilitaryPerson oldPerson, MilitaryPerson newPerson) {
+        String oldType = getTypeString(oldPerson);
+        String newType = getTypeString(newPerson);
+
+        StringBuilder message = new StringBuilder();
+        message.append("ID:").append(oldPerson.getId())
+                .append(", Фамилия:").append(newPerson.getLastName());
+
+        if (!oldType.equals(newType)) {
+            message.append(", Тип: ").append(oldType).append(" -> ").append(newType);
+        }
+
+        log(user.getId(), "ОБНОВЛЕНИЕ", message.toString());
+    }
+
+    public static void logAdd(User user, MilitaryPerson person, int newId) {
+        String message = String.format("ID:%d, Фамилия:%s, Тип:%s",
+                newId, person.getLastName(), getTypeString(person));
+        log(user.getId(), "ДОБАВЛЕНИЕ", message);
+    }
+
+    public static void logDelete(User user, MilitaryPerson person) {
+        String message = String.format("ID:%d, Фамилия:%s, Тип:%s",
+                person.getId(), person.getLastName(), getTypeString(person));
+        log(user.getId(), "УДАЛЕНИЕ", message);
+    }
+
+    public static void logLock(User user, MilitaryPerson person) {
+        String message = String.format("ID:%d, Фамилия:%s",
+                person.getId(), person.getLastName());
+        log(user.getId(), "БЛОКИРОВКА", message);
+    }
+
+    public static void logUnlock(User user, int recordId, String lastName) {
+        String message = String.format("ID:%d, Фамилия:%s", recordId, lastName);
+        log(user.getId(), "РАЗБЛОКИРОВКА", message);
+    }
+
+    private static String getTypeString(MilitaryPerson p) {
+        if (p instanceof MilitaryCommand) return "Командование";
+        if (p instanceof MilitaryContract) return "Контрактники";
+        if (p instanceof MilitaryAwarded) return "Награждённые";
+        return "Военнослужащие";
     }
 
     public static void log(Integer userId, String action, String details) {
