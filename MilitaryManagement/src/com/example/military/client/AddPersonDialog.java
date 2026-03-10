@@ -55,7 +55,7 @@ public class AddPersonDialog {
         // Правая колонка (StackPane, чтобы поля не накладывались, а переключались)
         StackPane rightStack = new StackPane();
         rightStack.setPrefWidth(350);
-        rightStack.setPrefHeight(312);
+        //rightStack.setPrefHeight(312);
         rightStack.setMaxHeight(312);
         rightStack.setMinHeight(312);
         rightStack.setStyle("-fx-border-color: #ccc; -fx-border-width: 0 0 0 1; -fx-padding: 0 0 0 20;");
@@ -527,4 +527,3 @@ public class AddPersonDialog {
         alert.showAndWait();
     }
 }
-
