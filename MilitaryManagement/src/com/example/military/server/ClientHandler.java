@@ -33,9 +33,6 @@ public class ClientHandler implements Runnable {
         String clientInfo = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
         logger.logClientAction(clientInfo, "Клиент #" + clientId + " подключился");
 
-        // Логируем подключение в аудит
-        logUserAction("ПОДКЛЮЧЕНИЕ", "Клиент " + clientInfo);
-
         try (
                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
@@ -62,9 +59,6 @@ public class ClientHandler implements Runnable {
                 clientSocket.close();
                 logger.logClientAction(clientInfo, "Клиент #" + clientId + " отключился");
 
-                // Логируем отключение в аудит
-                logUserAction("ОТКЛЮЧЕНИЕ", "Клиент " + clientInfo);
-
             } catch (IOException e) {
                 logger.error("Ошибка при закрытии соединения с клиентом #" + clientId, e);
             }
@@ -72,17 +66,27 @@ public class ClientHandler implements Runnable {
     }
 
     private String handleLockCommand(String requestJson) {
+        System.out.println("=== handleLockCommand ===");
+        System.out.println("currentUser = " + (currentUser != null ? currentUser.getId() : "null"));
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
             JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
 
             int recordId = data.get("id").getAsInt();
-            int userId = data.get("userId").getAsInt();  // получаем userId из запроса
+            int userId = data.get("userId").getAsInt();
+
+            // Проверку на currentUser убираем
+
+            MilitaryPerson person = service.getPersonById(recordId);
 
             boolean locked = service.lockRecord(recordId, userId);
 
             if (locked) {
-                logUserAction("БЛОКИРОВКА", "Запись ID=" + recordId);
+                if (person != null) {
+                    logUserAction("БЛОКИРОВКА", "Запись ID=" + recordId + ", Фамилия=" + person.getLastName());
+                } else {
+                    logUserAction("БЛОКИРОВКА", "Запись ID=" + recordId);
+                }
                 return ResponseBuilder.successWithMessage("Locked");
             } else {
                 return ResponseBuilder.error("Already locked");
@@ -94,17 +98,24 @@ public class ClientHandler implements Runnable {
     }
 
     private String handleUnlockCommand(String requestJson) {
+        System.out.println("=== handleUnlockCommand ===");
+        System.out.println("currentUser = " + (currentUser != null ? currentUser.getId() : "null"));
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
             JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
 
             int recordId = data.get("id").getAsInt();
-            int userId = data.get("userId").getAsInt();  // получаем userId
+            int userId = data.get("userId").getAsInt();
+
+            // Проверку убираем
+
+            MilitaryPerson person = service.getPersonById(recordId);
+            String lastName = (person != null) ? person.getLastName() : "неизвестно";
 
             boolean unlocked = service.unlockRecord(recordId, userId);
 
             if (unlocked) {
-                logUserAction("РАЗБЛОКИРОВКА", "Запись ID=" + recordId);
+                logUserAction("РАЗБЛОКИРОВКА", "Запись ID=" + recordId + ", Фамилия=" + lastName);
                 return ResponseBuilder.successWithMessage("Unlocked");
             } else {
                 return ResponseBuilder.error("Not locked or wrong user");
@@ -126,7 +137,7 @@ public class ClientHandler implements Runnable {
 
     private String handleLogoutCommand() {
         if (currentUser != null) {
-            logUserAction("ВЫХОД", "Пользователь " + currentUser.getFullName() + " вышел");
+            AuditLogger.log(currentUser.getId(), "ВЫХОД", "");
             currentUser = null;
         }
         return ResponseBuilder.successWithMessage("Выход выполнен");
@@ -258,6 +269,8 @@ public class ClientHandler implements Runnable {
      * Обработка команды ADD
      */
     private String handleAddCommand(String requestJson) {
+        System.out.println("=== handleAddCommand ===");
+        System.out.println("currentUser = " + (currentUser != null ? currentUser.getId() : "null"));
         MilitaryPerson person = RequestParser.extractPersonFromAddRequest(requestJson);
         Integer userId = RequestParser.extractUserIdFromRequest(requestJson);
 
@@ -287,7 +300,7 @@ public class ClientHandler implements Runnable {
      */
     private String handleGetAllCommand() {
         List<MilitaryPerson> list = service.getAllPersons();
-        logUserAction("ПРОСМОТР", "Все записи (" + list.size() + ")");
+        AuditLogger.log(currentUser.getId(), "ПРОСМОТР", "Загружено записей: " + list.size());
         return ResponseBuilder.personList(list);
     }
 
@@ -311,20 +324,30 @@ public class ClientHandler implements Runnable {
     }
 
     private String handleUpdateCommand(String requestJson) {
-        MilitaryPerson person = RequestParser.extractPersonFromAddRequest(requestJson);
+        try {
+            JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
+            JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
+            JsonObject personData = data.getAsJsonObject("person");
+            int userId = data.get("userId").getAsInt();
 
-        if (person == null) {
-            return ResponseBuilder.error("Не удалось извлечь данные");
-        }
+            // Получаем данные из запроса
+            MilitaryPerson newPerson = JsonConverter.fromJson(personData.toString());
 
-        boolean updated = service.updatePerson(person);
+            // Получаем СТАРУЮ версию из БД
+            MilitaryPerson oldPerson = service.getPersonById(newPerson.getId());
 
-        if (updated) {
-            logUserAction("ОБНОВЛЕНИЕ", "ID=" + person.getId() + ", " + person.getLastName());
-            return ResponseBuilder.successWithMessage("Обновлено");
-        } else {
-            logUserAction("ОШИБКА_ОБНОВЛЕНИЯ", "ID=" + person.getId());
-            return ResponseBuilder.error("Ошибка обновления");
+            boolean updated = service.updatePerson(newPerson);
+
+            if (updated) {
+                logUserAction("ОБНОВЛЕНИЕ", "ID=" + newPerson.getId() + ", " + newPerson.getLastName());
+                return ResponseBuilder.successWithMessage("Updated");
+            } else {
+                logUserAction("ОШИБКА_ОБНОВЛЕНИЯ", "ID=" + newPerson.getId());
+                return ResponseBuilder.error("Update failed");
+            }
+        } catch (Exception e) {
+            logger.error("Ошибка обновления", e);
+            return ResponseBuilder.error("Error");
         }
     }
 
@@ -338,10 +361,17 @@ public class ClientHandler implements Runnable {
             return ResponseBuilder.error("Не указан ID");
         }
 
+        // Получаем person ДО удаления
+        MilitaryPerson person = service.getPersonById(id);
+
         boolean deleted = service.deletePerson(id);
 
         if (deleted) {
-            logUserAction("УДАЛЕНИЕ", "ID=" + id);
+            if (person != null) {
+                logUserAction("УДАЛЕНИЕ", "ID=" + id + ", " + person.getLastName());
+            } else {
+                logUserAction("УДАЛЕНИЕ", "ID=" + id + " (запись не найдена)");
+            }
             return ResponseBuilder.successWithMessage("Удалено");
         } else {
             logUserAction("ОШИБКА_УДАЛЕНИЯ", "ID=" + id);
