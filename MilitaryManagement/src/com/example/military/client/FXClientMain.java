@@ -31,6 +31,8 @@ import javafx.scene.control.CheckBox;
 import java.util.Timer;
 import java.util.TimerTask;
 import javafx.scene.layout.Region;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FXClientMain extends Application {
 
@@ -222,6 +224,16 @@ public class FXClientMain extends Application {
             @Override
             public void run() {
                 Platform.runLater(() -> {
+                    // Сохраняем текущее состояние сортировки
+                    ObservableList<TableColumn<MilitaryPerson, ?>> sortOrder =
+                            FXCollections.observableArrayList(table.getSortOrder());
+
+                    // Сохраняем типы сортировки для каждой колонки
+                    Map<TableColumn<MilitaryPerson, ?>, TableColumn.SortType> sortTypes = new HashMap<>();
+                    for (TableColumn<MilitaryPerson, ?> col : sortOrder) {
+                        sortTypes.put(col, col.getSortType());
+                    }
+
                     String currentSearchText = searchField.getText();
                     String currentFilter = filterCombo.getValue();
 
@@ -255,10 +267,22 @@ public class FXClientMain extends Application {
 
                     List<MilitaryPerson> currentDisplayList = new ArrayList<>(personData);
 
+                    // Сравниваем списки
                     if (!listsAreEqual(currentDisplayList, finalList)) {
-                        // Перестраиваем колонки перед обновлением
-                        updateTableColumns(currentFilter);
+                        // Обновляем данные
                         personData.setAll(finalList);
+
+                        // Восстанавливаем сортировку
+                        if (!sortOrder.isEmpty()) {
+                            table.getSortOrder().setAll(sortOrder);
+                            for (TableColumn<MilitaryPerson, ?> col : sortOrder) {
+                                TableColumn.SortType type = sortTypes.get(col);
+                                if (type != null) {
+                                    col.setSortType(type);
+                                }
+                            }
+                            table.sort();
+                        }
                     }
                 });
             }
@@ -920,3 +944,4 @@ public class FXClientMain extends Application {
         launch(args);
     }
 }
+
