@@ -521,13 +521,39 @@ public class FXClientMain extends Application {
         rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
         rankCol.setPrefWidth(180);
 
-        TableColumn<MilitaryPerson, String> birthDateCol = new TableColumn<>("Дата рождения");
+        // ДАТА РОЖДЕНИЯ
+        // ДАТА РОЖДЕНИЯ - ИСПРАВЛЕННАЯ ВЕРСИЯ
+        TableColumn<MilitaryPerson, LocalDate> birthDateCol = new TableColumn<>("Дата рождения");
+
+// Получаем дату из объекта
         birthDateCol.setCellValueFactory(cellData -> {
             LocalDate date = cellData.getValue().getBirthDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    date != null ? date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : ""
-            );
+            return new javafx.beans.property.SimpleObjectProperty<>(date);
         });
+
+// Форматируем отображение
+        birthDateCol.setCellFactory(col -> new TableCell<MilitaryPerson, LocalDate>() {
+            private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+            @Override
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null) {
+                    setText("");
+                } else {
+                    setText(formatter.format(date));
+                }
+            }
+        });
+
+// Явно задаём компаратор для сортировки
+        birthDateCol.setComparator((date1, date2) -> {
+            if (date1 == null && date2 == null) return 0;
+            if (date1 == null) return 1;  // null даты в конец
+            if (date2 == null) return -1;
+            return date1.compareTo(date2);
+        });
+
         birthDateCol.setPrefWidth(110);
 
         TableColumn<MilitaryPerson, String> enlistDateCol = new TableColumn<>("Дата поступления");
