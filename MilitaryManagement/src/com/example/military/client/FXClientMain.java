@@ -352,7 +352,7 @@ public class FXClientMain extends Application {
             int index = tableView.getItems().indexOf(cellData.getValue()) + 1;
             return new javafx.beans.property.ReadOnlyObjectWrapper<>(index);
         });
-        numberCol.setPrefWidth(50);
+        numberCol.setPrefWidth(60);
         numberCol.setSortable(true);
         numberCol.setUserData(0); // 0 - ASC, 1 - DESC
 
@@ -409,7 +409,7 @@ public class FXClientMain extends Application {
             double salary = cellData.getValue().getSalary();
             return new javafx.beans.property.SimpleStringProperty(String.format("%.0f", salary));
         });
-        salaryCol.setPrefWidth(85);
+        salaryCol.setPrefWidth(95);
 
         TableColumn<MilitaryPerson, String> typeCol = new TableColumn<>("Тип");
         typeCol.setCellValueFactory(cellData -> {
@@ -429,7 +429,7 @@ public class FXClientMain extends Application {
                     date != null ? date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : ""
             );
         });
-        birthDateCol.setPrefWidth(110);
+        birthDateCol.setPrefWidth(135);
 
         TableColumn<MilitaryPerson, String> enlistDateCol = new TableColumn<>("Дата поступления");
         enlistDateCol.setCellValueFactory(cellData -> {
@@ -438,11 +438,11 @@ public class FXClientMain extends Application {
                     date != null ? date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : ""
             );
         });
-        enlistDateCol.setPrefWidth(130);
+        enlistDateCol.setPrefWidth(150);
 
         TableColumn<MilitaryPerson, String> unitCol = new TableColumn<>("Часть");
         unitCol.setCellValueFactory(new PropertyValueFactory<>("unit"));
-        unitCol.setPrefWidth(65);
+        unitCol.setPrefWidth(75);
 
         TableColumn<MilitaryPerson, String> extraCol = new TableColumn<>("Доп. поля");
         extraCol.setCellValueFactory(cellData -> {
@@ -507,7 +507,7 @@ public class FXClientMain extends Application {
             int index = table.getItems().indexOf(cellData.getValue()) + 1;
             return new javafx.beans.property.ReadOnlyObjectWrapper<>(index);
         });
-        numberCol.setPrefWidth(50);
+        numberCol.setPrefWidth(60);
 
         TableColumn<MilitaryPerson, String> lastNameCol = new TableColumn<>("Фамилия");
         lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
@@ -554,20 +554,45 @@ public class FXClientMain extends Application {
             return date1.compareTo(date2);
         });
 
-        birthDateCol.setPrefWidth(110);
+        birthDateCol.setPrefWidth(135);
 
-        TableColumn<MilitaryPerson, String> enlistDateCol = new TableColumn<>("Дата поступления");
+        // ДАТА ПОСТУПЛЕНИЯ
+        TableColumn<MilitaryPerson, LocalDate> enlistDateCol = new TableColumn<>("Дата поступления");
+
+// Получаем дату из объекта
         enlistDateCol.setCellValueFactory(cellData -> {
             LocalDate date = cellData.getValue().getEnlistmentDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    date != null ? date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : ""
-            );
+            return new javafx.beans.property.SimpleObjectProperty<>(date);
         });
-        enlistDateCol.setPrefWidth(130);
+
+// Форматируем отображение
+        enlistDateCol.setCellFactory(col -> new TableCell<MilitaryPerson, LocalDate>() {
+            private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+            @Override
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                if (empty || date == null) {
+                    setText("");
+                } else {
+                    setText(formatter.format(date));
+                }
+            }
+        });
+
+// Явно задаём компаратор для сортировки
+        enlistDateCol.setComparator((date1, date2) -> {
+            if (date1 == null && date2 == null) return 0;
+            if (date1 == null) return 1;  // null даты в конец
+            if (date2 == null) return -1;
+            return date1.compareTo(date2);
+        });
+
+        enlistDateCol.setPrefWidth(150);
 
         TableColumn<MilitaryPerson, String> unitCol = new TableColumn<>("Часть");
         unitCol.setCellValueFactory(new PropertyValueFactory<>("unit"));
-        unitCol.setPrefWidth(65);
+        unitCol.setPrefWidth(75);
 
         TableColumn<MilitaryPerson, String> salaryCol = new TableColumn<>("Зарплата");
         salaryCol.setCellValueFactory(cellData -> {
@@ -575,7 +600,7 @@ public class FXClientMain extends Application {
             return new javafx.beans.property.SimpleStringProperty(String.format("%.0f", salary));
         });
         salaryCol.setComparator(Comparator.comparingDouble(Double::parseDouble));
-        salaryCol.setPrefWidth(85);
+        salaryCol.setPrefWidth(95);
 
         // Добавляем базовые колонки
         table.getColumns().addAll(numberCol, lastNameCol, companyCol, rankCol,
@@ -597,12 +622,12 @@ public class FXClientMain extends Application {
             });
             positionCol.setPrefWidth(180);
 
-            TableColumn<MilitaryPerson, Integer> yearsCol = new TableColumn<>("Выслуга");
+            TableColumn<MilitaryPerson, Integer> yearsCol = new TableColumn<>("Выслуга лет");
             yearsCol.setCellValueFactory(cellData -> {
                 MilitaryCommand cmd = (MilitaryCommand) cellData.getValue();
                 return new javafx.beans.property.SimpleIntegerProperty(cmd.getYearsOfService()).asObject();
             });
-            yearsCol.setPrefWidth(70);
+            yearsCol.setPrefWidth(150);
 
             TableColumn<MilitaryPerson, String> cmdAllowanceCol = new TableColumn<>("Надбавка");
             cmdAllowanceCol.setCellValueFactory(cellData -> {
@@ -611,9 +636,19 @@ public class FXClientMain extends Application {
                         String.format("%.0f", cmd.getAllowance())
                 );
             });
-            cmdAllowanceCol.setPrefWidth(70);
+            cmdAllowanceCol.setComparator((s1, s2) -> {
+                try {
+                    double d1 = Double.parseDouble(s1);
+                    double d2 = Double.parseDouble(s2);
+                    return Double.compare(d1, d2);
+                } catch (NumberFormatException e) {
+                    return s1.compareTo(s2);
+                }
+            });
+            cmdAllowanceCol.setPrefWidth(100);
 
-            table.getColumns().addAll(districtCol, positionCol, yearsCol);
+// Добавляем в таблицу
+            table.getColumns().addAll(districtCol, positionCol, yearsCol, cmdAllowanceCol);
         }
         else if (filterType.equals("Контрактники")) {
             // колонки для контрактников
@@ -622,16 +657,46 @@ public class FXClientMain extends Application {
                 MilitaryContract contract = (MilitaryContract) cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(contract.getContractPeriod());
             });
-            periodCol.setPrefWidth(150);
+            periodCol.setPrefWidth(300);
 
-            TableColumn<MilitaryPerson, String> protocolCol = new TableColumn<>("Протокол");
+            TableColumn<MilitaryPerson, LocalDate> contractDateCol = new TableColumn<>("Дата договора");
+            contractDateCol.setCellValueFactory(cellData -> {
+                MilitaryContract contract = (MilitaryContract) cellData.getValue();
+                return new javafx.beans.property.SimpleObjectProperty<>(contract.getContractDate());
+            });
+
+            contractDateCol.setCellFactory(col -> new TableCell<MilitaryPerson, LocalDate>() {
+                private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+                @Override
+                protected void updateItem(LocalDate date, boolean empty) {
+                    super.updateItem(date, empty);
+                    if (empty || date == null) {
+                        setText("");
+                    } else {
+                        setText(formatter.format(date));
+                    }
+                }
+            });
+
+            contractDateCol.setComparator((date1, date2) -> {
+                if (date1 == null && date2 == null) return 0;
+                if (date1 == null) return 1;  // null в конец
+                if (date2 == null) return -1;
+                return date1.compareTo(date2);
+            });
+            contractDateCol.setPrefWidth(180);
+
+// Добавляем в таблицу вместе с существующими колонками
+
+            TableColumn<MilitaryPerson, String> protocolCol = new TableColumn<>("Номер протокола");
             protocolCol.setCellValueFactory(cellData -> {
                 MilitaryContract contract = (MilitaryContract) cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(contract.getProtocolNumber());
             });
-            protocolCol.setPrefWidth(80);
+            protocolCol.setPrefWidth(150);
 
-            table.getColumns().addAll(periodCol, protocolCol);
+            table.getColumns().addAll(periodCol, contractDateCol, protocolCol);
         }
         else if (filterType.equals("Награждённые")) {
             // колонки для награждённых
@@ -640,7 +705,7 @@ public class FXClientMain extends Application {
                 MilitaryAwarded awarded = (MilitaryAwarded) cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(awarded.getAwardName());
             });
-            awardCol.setPrefWidth(250);
+            awardCol.setPrefWidth(300);
 
             TableColumn<MilitaryPerson, String> prizeCol = new TableColumn<>("Премия");
             prizeCol.setCellValueFactory(cellData -> {
@@ -649,7 +714,16 @@ public class FXClientMain extends Application {
                         String.format("%.0f", awarded.getPrize())
                 );
             });
-            prizeCol.setPrefWidth(70);
+            prizeCol.setComparator((s1, s2) -> {
+                try {
+                    double d1 = Double.parseDouble(s1);
+                    double d2 = Double.parseDouble(s2);
+                    return Double.compare(d1, d2);
+                } catch (NumberFormatException e) {
+                    return s1.compareTo(s2);
+                }
+            });
+            prizeCol.setPrefWidth(180);
 
             TableColumn<MilitaryPerson, String> allowanceCol = new TableColumn<>("Надбавка");
             allowanceCol.setCellValueFactory(cellData -> {
@@ -658,7 +732,16 @@ public class FXClientMain extends Application {
                         String.format("%.0f", awarded.getAllowance())
                 );
             });
-            allowanceCol.setPrefWidth(80);
+            allowanceCol.setComparator((s1, s2) -> {
+                try {
+                    double d1 = Double.parseDouble(s1);
+                    double d2 = Double.parseDouble(s2);
+                    return Double.compare(d1, d2);
+                } catch (NumberFormatException e) {
+                    return s1.compareTo(s2);
+                }
+            });
+            allowanceCol.setPrefWidth(150);
 
             table.getColumns().addAll(awardCol, prizeCol, allowanceCol);
         }
@@ -770,7 +853,7 @@ public class FXClientMain extends Application {
             MilitaryCommand cmd = (MilitaryCommand) person;
             content.append("Округ: ").append(cmd.getMilitaryDistrict()).append("\n");
             content.append("Должность: ").append(cmd.getPosition()).append("\n");
-            content.append("Выслуга: ").append(cmd.getYearsOfService()).append("\n");
+            content.append("Выслуга лет: ").append(cmd.getYearsOfService()).append("\n");
             content.append("Надбавка: ").append(cmd.getAllowance()).append("\n");
         }
 
@@ -971,4 +1054,5 @@ public class FXClientMain extends Application {
         launch(args);
     }
 }
+
 
