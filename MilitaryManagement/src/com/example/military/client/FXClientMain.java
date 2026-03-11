@@ -548,6 +548,18 @@ public class FXClientMain extends Application {
             double salary = cellData.getValue().getSalary();
             return new javafx.beans.property.SimpleStringProperty(String.format("%.0f", salary));
         });
+
+// Кастомный компаратор для правильной числовой сортировки
+        salaryCol.setComparator((s1, s2) -> {
+            try {
+                double d1 = Double.parseDouble(s1);
+                double d2 = Double.parseDouble(s2);
+                return Double.compare(d1, d2);
+            } catch (NumberFormatException e) {
+                return s1.compareTo(s2);
+            }
+        });
+
         salaryCol.setPrefWidth(75);
 
         // Добавляем базовые колонки
