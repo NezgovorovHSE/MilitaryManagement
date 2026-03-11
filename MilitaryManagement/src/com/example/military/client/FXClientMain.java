@@ -45,6 +45,7 @@ public class FXClientMain extends Application {
     private boolean isRefreshing = false;
     private TextField searchField;
     private User currentUser;
+    private Label userLabel;  // делаем поле класса
 
     @Override
     public void start(Stage primaryStage) {
@@ -143,7 +144,7 @@ public class FXClientMain extends Application {
             Button btnLogout = new Button("➜] Выйти");
             btnLogout.setOnAction(e -> logout());
 
-            Label userLabel = new Label(currentUser.getFullName());
+            userLabel = new Label(currentUser.getFullName());  // без Label
             userLabel.setStyle("-fx-text-fill: #E5E9F0; -fx-font-weight: bold;");
 
 // Группа кнопок операций
@@ -204,6 +205,7 @@ public class FXClientMain extends Application {
             if (newUser != null) {
                 // Обновляем текущего пользователя
                 this.currentUser = newUser;
+                userLabel.setText(currentUser.getFullName());
                 // Очищаем таблицу и перезагружаем данные
                 loadData();
                 // Показываем текущее окно заново
