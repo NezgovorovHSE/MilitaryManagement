@@ -409,7 +409,7 @@ public class FXClientMain extends Application {
             double salary = cellData.getValue().getSalary();
             return new javafx.beans.property.SimpleStringProperty(String.format("%.0f", salary));
         });
-        salaryCol.setPrefWidth(75);
+        salaryCol.setPrefWidth(85);
 
         TableColumn<MilitaryPerson, String> typeCol = new TableColumn<>("Тип");
         typeCol.setCellValueFactory(cellData -> {
@@ -442,7 +442,7 @@ public class FXClientMain extends Application {
 
         TableColumn<MilitaryPerson, String> unitCol = new TableColumn<>("Часть");
         unitCol.setCellValueFactory(new PropertyValueFactory<>("unit"));
-        unitCol.setPrefWidth(60);
+        unitCol.setPrefWidth(65);
 
         TableColumn<MilitaryPerson, String> extraCol = new TableColumn<>("Доп. поля");
         extraCol.setCellValueFactory(cellData -> {
@@ -541,26 +541,15 @@ public class FXClientMain extends Application {
 
         TableColumn<MilitaryPerson, String> unitCol = new TableColumn<>("Часть");
         unitCol.setCellValueFactory(new PropertyValueFactory<>("unit"));
-        unitCol.setPrefWidth(60);
+        unitCol.setPrefWidth(65);
 
         TableColumn<MilitaryPerson, String> salaryCol = new TableColumn<>("Зарплата");
         salaryCol.setCellValueFactory(cellData -> {
             double salary = cellData.getValue().getSalary();
             return new javafx.beans.property.SimpleStringProperty(String.format("%.0f", salary));
         });
-
-// Кастомный компаратор для правильной числовой сортировки
-        salaryCol.setComparator((s1, s2) -> {
-            try {
-                double d1 = Double.parseDouble(s1);
-                double d2 = Double.parseDouble(s2);
-                return Double.compare(d1, d2);
-            } catch (NumberFormatException e) {
-                return s1.compareTo(s2);
-            }
-        });
-
-        salaryCol.setPrefWidth(75);
+        salaryCol.setComparator(Comparator.comparingDouble(Double::parseDouble));
+        salaryCol.setPrefWidth(85);
 
         // Добавляем базовые колонки
         table.getColumns().addAll(numberCol, lastNameCol, companyCol, rankCol,
