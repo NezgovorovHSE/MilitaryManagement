@@ -81,22 +81,23 @@ public class FXClientMain extends Application {
 
             startAutoRefresh(10);
 
-            // Инициализация фильтра (ВАЖНО: до loadData!)
+// Инициализация фильтра (ВАЖНО: до loadData!)
             filterCombo = new ComboBox<>();
             filterCombo.getItems().addAll("Все записи", "Военнослужащие", "Командование", "Контрактники", "Награждённые");
             filterCombo.setValue("Все записи");
             filterCombo.setOnAction(e -> loadData());
 
-            // Добавляем слушатель на изменение текста
+// Добавляем слушатель на изменение текста
             searchField.textProperty().addListener((observable, oldValue, newValue) -> {
                 applySearchFilter(newValue);
             });
 
-            // Проверка подключения
+// Проверка подключения
             checkServerConnection();
 
-            // Создание таблицы
+// Создание таблицы
             table = new TableView<>();
+
 // Обработчик двойного клика для редактирования
             table.setRowFactory(tv -> {
                 TableRow<MilitaryPerson> row = new TableRow<>();
@@ -115,20 +116,14 @@ public class FXClientMain extends Application {
             });
 
             updateTableColumns(currentFilterType);
-
             loadData();
 
-            // Верхняя панель с фильтром и кнопками в один ряд
+// Верхняя панель с фильтром и кнопками в один ряд
             HBox topPanel = new HBox(20);
             topPanel.setPadding(new Insets(10));
             topPanel.setAlignment(Pos.CENTER_LEFT);
 
-            // Корневой контейнер
-            BorderPane root = new BorderPane();
-            root.setTop(topPanel);
-            root.setCenter(table);
-
-            // Кнопки управления
+// Кнопки управления
             Button btnAdd = new Button("\uD83D\uDFA3 Добавить");
             Button btnDelete = new Button("✕ Удалить");
             Button btnImport = new Button("▴ Выгрузить из файла");
@@ -139,47 +134,48 @@ public class FXClientMain extends Application {
             btnAdd.setOnAction(e -> showAddDialog());
             btnDelete.setOnAction(e -> deleteSelected());
 
-// Группа фильтра
+// Группа фильтра (слева)
             HBox filterGroup = new HBox(10);
             filterGroup.setAlignment(Pos.CENTER_LEFT);
             filterGroup.getChildren().addAll(new Label("Фильтр:"), filterCombo);
 
+// Кнопка выхода и метка пользователя (справа)
             Button btnLogout = new Button("➜] Выйти");
             btnLogout.setOnAction(e -> logout());
 
             Label userLabel = new Label(currentUser.getFullName());
             userLabel.setStyle("-fx-text-fill: #E5E9F0; -fx-font-weight: bold;");
 
-// Группа кнопок
+// Группа кнопок операций
             HBox operationsGroup = new HBox(10);
             operationsGroup.setAlignment(Pos.CENTER_LEFT);
             operationsGroup.getChildren().addAll(btnAdd, btnDelete, btnImport, btnExport);
+
+// Правая группа (пользователь + выход)
+            HBox rightGroup = new HBox(10);
+            rightGroup.setAlignment(Pos.CENTER_RIGHT);
+            rightGroup.getChildren().addAll(userLabel, btnLogout);
 
 // Растягивающийся разделитель (заполняет пространство между левой и правой группами)
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
-            HBox rightGroup = new HBox(10);
-            rightGroup.setAlignment(Pos.CENTER_RIGHT);
+// Собираем всё: фильтр → поиск → кнопки операций → разделитель → правая группа
+            topPanel.getChildren().addAll(filterGroup, searchField, operationsGroup, spacer, rightGroup);
 
-            rightGroup.getChildren().addAll(userLabel, btnLogout);
-
-// Собираем всё
-            topPanel.getChildren().addAll(filterGroup, operationsGroup, spacer, rightGroup);
+            BorderPane root = new BorderPane();
             root.setTop(topPanel);
+            root.setCenter(table);
 
-            Label filterLabel = new Label("Фильтр:");
-
-            // Установка иконки приложения
-            // Установка иконки приложения
+// Установка иконки приложения
             try {
-                // Файл лежит в корне проекта (рядом с папкой src)
                 Image icon = new Image("file:star-icon.png");
                 primaryStage.getIcons().add(icon);
             } catch (Exception e) {
                 System.out.println("Не удалось загрузить иконку: " + e.getMessage());
             }
-            // Сцена
+
+// Сцена
             Scene scene = new Scene(root, 1750, 840);
             scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
             primaryStage.setTitle("АРМ «Военный состав»");
