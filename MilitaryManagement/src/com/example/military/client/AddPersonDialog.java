@@ -317,6 +317,11 @@ public class AddPersonDialog {
                 String rank = rankField.getText().trim();
                 String salaryText = salaryField.getText().trim();
 
+                if (lastName.isEmpty() || company.isEmpty() || rank.isEmpty() || salaryText.isEmpty()) {
+                    showAlert(owner, "Ошибка", "Заполните обязательные поля");
+                    return;
+                }
+
                 // Валидация форматов
                 String errors = validateFields(
                         selectedType,
@@ -336,11 +341,6 @@ public class AddPersonDialog {
                     return;
                 } else {
                     errorLabel.setVisible(false);
-                }
-
-                if (lastName.isEmpty() || company.isEmpty() || rank.isEmpty() || salaryText.isEmpty()) {
-                    showAlert(owner, "Ошибка", "Заполните обязательные поля");
-                    return;
                 }
 
                 double salary = Double.parseDouble(salaryText);
