@@ -42,6 +42,15 @@ public class MilitaryService {
         }
     }
 
+    public Integer checkLockOwner(int recordId) {
+        try {
+            return dbManager.checkLockOwner(recordId);
+        } catch (SQLException e) {
+            logger.error("Ошибка проверки блокировки записи ID=" + recordId, e);
+            return null;
+        }
+    }
+
     private boolean checkPassword(String plainPassword, String hash) {
         if (hash == null || hash.isEmpty()) return false;
         try {
