@@ -231,14 +231,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private String handleLogoutCommand(String requestJson) {
-        if (currentUser != null) {
-            AuditLogger.logLogout(currentUser.getUsername());
-            currentUser = null;
-        }
-        return ResponseBuilder.successWithMessage("Выход выполнен");
-    }
-
     private String handleLoginCommand(String requestJson) {
         try {
             // Если аутентификация отключена - пропускаем всех
@@ -367,27 +359,38 @@ public class ClientHandler implements Runnable {
      * Обработка команды DELETE
      */
     private String handleDeleteCommand(String requestJson) {
-        Integer id = RequestParser.extractIdFromRequest(requestJson);
+        try {
+            JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
+            JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
 
-        if (id == null) {
-            return ResponseBuilder.error("Не указан ID");
-        }
+            int id = data.get("id").getAsInt();
+            int userId = data.get("userId").getAsInt();
 
-        // Получаем person ДО удаления
-        MilitaryPerson person = service.getPersonById(id);
-
-        boolean deleted = service.deletePerson(id);
-
-        if (deleted) {
-            if (person != null) {
-                AuditLogger.logDelete(getCurrentUsername(), person);
-            } else {
-                AuditLogger.log(getCurrentUsername(), "УДАЛЕНИЕ", "ID=" + id + " (запись не найдена)");
+            // Проверяем, не заблокирована ли запись другим пользователем
+            Integer lockOwner = service.checkLockOwner(id);
+            if (lockOwner != null && lockOwner != userId) {
+                return ResponseBuilder.error("Запись редактируется другим пользователем");
             }
-            return ResponseBuilder.successWithMessage("Удалено");
-        } else {
-            AuditLogger.log(getCurrentUsername(), "ОШИБКА_УДАЛЕНИЯ", "ID=" + id);
-            return ResponseBuilder.error("Не найдено");
+
+            // Получаем person ДО удаления
+            MilitaryPerson person = service.getPersonById(id);
+
+            boolean deleted = service.deletePerson(id);
+
+            if (deleted) {
+                if (person != null) {
+                    AuditLogger.logDelete(getCurrentUsername(), person);
+                } else {
+                    AuditLogger.log(getCurrentUsername(), "УДАЛЕНИЕ", "ID=" + id + " (запись не найдена)");
+                }
+                return ResponseBuilder.successWithMessage("Удалено");
+            } else {
+                AuditLogger.log(getCurrentUsername(), "ОШИБКА_УДАЛЕНИЯ", "ID=" + id);
+                return ResponseBuilder.error("Не найдено");
+            }
+        } catch (Exception e) {
+            logger.error("Ошибка удаления", e);
+            return ResponseBuilder.error("Error");
         }
     }
 
