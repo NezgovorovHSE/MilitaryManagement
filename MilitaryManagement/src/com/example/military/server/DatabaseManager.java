@@ -50,20 +50,16 @@ public class DatabaseManager {
         }
     }
 
-    private void checkLockOwner(int recordId) {
-        String sql = "SELECT locked_by, locked_at FROM personnel WHERE id = ?";
+    public Integer checkLockOwner(int recordId) throws SQLException {
+        String sql = "SELECT locked_by FROM personnel WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, recordId);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                Integer owner = rs.getInt("locked_by");
-                String timestamp = rs.getString("locked_at");
-                System.out.println("Текущий владелец ID=" + recordId + ": " +
-                        (owner != null ? owner + " (с " + timestamp + ")" : "свободно"));
+                return rs.getInt("locked_by");
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
+        return null;
     }
 
     public User findUserById(int userId) throws SQLException {
