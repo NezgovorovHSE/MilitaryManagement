@@ -12,6 +12,7 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.InputStream;
 
 public class LoginDialog {
@@ -95,7 +96,22 @@ public class LoginDialog {
         root.getChildren().addAll(titleLabel, grid, errorLabel, buttonBox);
 
         Scene scene = new Scene(root, 400, 300);
-        scene.getStylesheets().add("file:out/com/example/military/client/style.css");
+        try {
+            File cssFile = new File("target/classes/com/example/military/client/style.css");
+            if (cssFile.exists()) {
+                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
+                System.out.println("LoginDialog: CSS загружен из target");
+            }
+        } catch (Exception e) {}
+
+        // Путь для второго устройства (out)
+        try {
+            File cssFile = new File("out/com/example/military/client/style.css");
+            if (cssFile.exists()) {
+                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
+                System.out.println("LoginDialog: CSS загружен из out");
+            }
+        } catch (Exception e) {}
         dialog.setScene(scene);
 
         // Обработчики

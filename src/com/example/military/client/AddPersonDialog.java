@@ -10,6 +10,7 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -450,7 +451,24 @@ public class AddPersonDialog {
         });
 
         Scene scene = new Scene(root, 1000, 508);
-        scene.getStylesheets().add("file:out/com/example/military/client/style.css");
+        try {
+            File cssFile = new File("target/classes/com/example/military/client/style.css");
+            if (cssFile.exists()) {
+                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
+                System.out.println("AddPersonDialog: CSS загружен из target");
+                return;
+            }
+        } catch (Exception e) {}
+
+        // Путь для второго устройства (out)
+        try {
+            File cssFile = new File("out/com/example/military/client/style.css");
+            if (cssFile.exists()) {
+                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
+                System.out.println("AddPersonDialog: CSS загружен из out");
+                return;
+            }
+        } catch (Exception e) {}
         dialog.setScene(scene);
         dialog.showAndWait();
     }

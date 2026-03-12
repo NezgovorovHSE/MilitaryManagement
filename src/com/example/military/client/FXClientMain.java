@@ -185,7 +185,24 @@ public class FXClientMain extends Application {
 
 // Сцена
             Scene scene = new Scene(root, 1750, 840);
-            scene.getStylesheets().add("file:out/com/example/military/client/style.css");
+            try {
+                File cssFile = new File("target/classes/com/example/military/client/style.css");
+                if (cssFile.exists()) {
+                    scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
+                    System.out.println("CSS загружен из target");
+                    return;
+                }
+            } catch (Exception e) {}
+
+            // Для второго устройства (out)
+            try {
+                File cssFile = new File("out/com/example/military/client/style.css");
+                if (cssFile.exists()) {
+                    scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
+                    System.out.println("CSS загружен из out");
+                    return;
+                }
+            } catch (Exception e) {}
             primaryStage.setTitle("АРМ «Военный состав»");
             primaryStage.setScene(scene);
             primaryStage.setMaximized(true);
