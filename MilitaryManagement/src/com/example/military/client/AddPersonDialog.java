@@ -26,7 +26,7 @@ public class AddPersonDialog {
         dialog.setTitle(isEditMode ? "Редактирование военнослужащего" : "Добавление военнослужащего");
 
         try {
-            Image icon = new Image("file:star-icon.png");
+            Image icon = new Image("file:star.ico");
             dialog.getIcons().add(icon);
         } catch (Exception e) {
             // игнорируем, если файл не найден
