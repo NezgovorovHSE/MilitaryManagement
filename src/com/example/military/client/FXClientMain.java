@@ -1,5 +1,5 @@
 package com.example.military.client;
-//Тест для гита
+//Тест для гита 1
 import com.example.military.client.AddPersonDialog;
 import com.example.military.model.*;
 import com.example.military.server.AuditLogger;
