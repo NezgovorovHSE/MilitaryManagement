@@ -23,13 +23,13 @@ public class MilitaryService {
         try {
             User user = dbManager.findUserByUsername(username);
             if (user != null && checkPassword(password, user.getPasswordHash())) {
-                AuditLogger.logLogin(user.getUsername(), "unknown", true);
+                AuditLogger.log(user.getUsername(), "ПОПЫТКА ВХОДА", "");
                 return user;
             }
         } catch (SQLException e) {
             logger.error("Ошибка аутентификации", e);
         }
-        AuditLogger.logLogin(null, "unknown", false);
+        AuditLogger.log(username, "ПОПЫТКА ВХОДА", "");
         return null;
     }
 
