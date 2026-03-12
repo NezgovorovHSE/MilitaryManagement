@@ -12,6 +12,8 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.InputStream;
+
 public class LoginDialog {
 
     public static User show(Stage owner, ServerConnector connector) {
@@ -20,9 +22,14 @@ public class LoginDialog {
         dialog.initOwner(owner);
         dialog.setTitle("АРМ «Военный состав»");
 
+        // Добавляем иконку приложения
         try {
-            Image icon = new Image("file:star.ico");
-            dialog.getIcons().add(icon);
+            InputStream iconStream = Thread.currentThread().getContextClassLoader()
+                    .getResourceAsStream("com/example/military/client/star-icon.png");
+            if (iconStream != null) {
+                Image icon = new Image(iconStream);
+                dialog.getIcons().add(icon);
+            }
         } catch (Exception e) {
             // игнорируем
         }
