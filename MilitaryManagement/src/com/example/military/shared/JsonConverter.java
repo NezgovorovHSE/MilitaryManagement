@@ -9,6 +9,10 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class JsonConverter {
@@ -42,8 +46,20 @@ public class JsonConverter {
     }
 
     public static List<MilitaryPerson> listFromJson(String json) {
-        Type listType = new TypeToken<List<MilitaryPerson>>(){}.getType();
-        return gson.fromJson(json, listType);
+        System.out.println("=== listFromJson ===");
+        System.out.println("JSON length: " + json.length());
+        System.out.println("First 100 chars: " + json.substring(0, Math.min(100, json.length())));
+
+        try {
+            Type listType = new TypeToken<List<MilitaryPerson>>(){}.getType();
+            List<MilitaryPerson> result = gson.fromJson(json, listType);
+            System.out.println("Parsed " + (result != null ? result.size() : 0) + " items");
+            return result;
+        } catch (Exception e) {
+            System.err.println("Error parsing JSON list: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 
     public static String createRequest(String command, Object data) {
@@ -62,6 +78,32 @@ public class JsonConverter {
         String result = gson.toJson(request);
         System.out.println("result: " + result);
         return result;
+    }
+
+    public static LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+
+        // Список возможных форматов
+        List<DateTimeFormatter> formatters = Arrays.asList(
+                DateTimeFormatter.ofPattern("dd.MM.yyyy"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+                DateTimeFormatter.ofPattern("dd-MM-yyyy"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss") // для ISO с временем
+        );
+
+        for (DateTimeFormatter formatter : formatters) {
+            try {
+                return LocalDate.parse(dateStr, formatter);
+            } catch (DateTimeParseException ignored) {
+                // пробуем следующий формат
+            }
+        }
+
+        throw new DateTimeParseException("Не удалось распарсить дату: " + dateStr, dateStr, 0);
     }
 
     public static String createResponse(String status, String message, Object data) {
@@ -159,6 +201,7 @@ public class JsonConverter {
             } else if (src instanceof MilitaryContract) {
                 MilitaryContract contract = (MilitaryContract) src;
                 data.addProperty("contractPeriod", contract.getContractPeriod());
+                // При сериализации (записи в JSON) используем ISO
                 data.addProperty("contractDate", contract.getContractDate() != null ? contract.getContractDate().toString() : null);
                 data.addProperty("protocolNumber", contract.getProtocolNumber());
             } else if (src instanceof MilitaryAwarded) {
@@ -186,12 +229,12 @@ public class JsonConverter {
 
             LocalDate birthDate = null;
             if (data.has("birthDate") && !data.get("birthDate").isJsonNull()) {
-                birthDate = LocalDate.parse(data.get("birthDate").getAsString());
+                birthDate = JsonConverter.parseDate(data.get("birthDate").getAsString());
             }
 
             LocalDate enlistmentDate = null;
             if (data.has("enlistmentDate") && !data.get("enlistmentDate").isJsonNull()) {
-                enlistmentDate = LocalDate.parse(data.get("enlistmentDate").getAsString());
+                enlistmentDate = JsonConverter.parseDate(data.get("enlistmentDate").getAsString());
             }
 
             String unit = data.has("unit") ? data.get("unit").getAsString() : null;
@@ -213,7 +256,7 @@ public class JsonConverter {
                 case Protocol.TYPE_CONTRACT:
                     LocalDate contractDate = null;
                     if (data.has("contractDate") && !data.get("contractDate").isJsonNull()) {
-                        contractDate = LocalDate.parse(data.get("contractDate").getAsString());
+                        contractDate = JsonConverter.parseDate(data.get("contractDate").getAsString());
                     }
                     MilitaryContract contract = new MilitaryContract(
                             lastName, company, rank, birthDate, enlistmentDate, unit, salary,
