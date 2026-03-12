@@ -364,6 +364,52 @@ public class ServerConnector {
         return value;
     }
 
+    public void logExport(String filename, int count) {
+        if (!connect()) return;
+
+        try {
+            JsonObject data = new JsonObject();
+            data.addProperty("filename", filename);
+            data.addProperty("count", count);
+            if (currentUserId != null) {
+                data.addProperty("userId", currentUserId);
+            }
+
+            String request = JsonConverter.createRequest(Protocol.CMD_LOG_EXPORT, data);
+            out.println(request);
+            out.flush();
+
+            String response = in.readLine();
+            disconnect();
+        } catch (Exception e) {
+            e.printStackTrace();
+            disconnect();
+        }
+    }
+
+    public void logImport(String filename, int added) {
+        if (!connect()) return;
+
+        try {
+            JsonObject data = new JsonObject();
+            data.addProperty("filename", filename);
+            data.addProperty("added", added);
+            if (currentUserId != null) {
+                data.addProperty("userId", currentUserId);
+            }
+
+            String request = JsonConverter.createRequest(Protocol.CMD_LOG_IMPORT, data);
+            out.println(request);
+            out.flush();
+
+            String response = in.readLine();
+            disconnect();
+        } catch (Exception e) {
+            e.printStackTrace();
+            disconnect();
+        }
+    }
+
     private String formatDate(LocalDate date) {
         return date != null ? date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : "";
     }
@@ -490,6 +536,9 @@ public class ServerConnector {
         try {
             JsonObject data = new JsonObject();
             data.addProperty("filePath", filePath);
+
+            System.out.println("=== IMPORT REQUEST DATA ===");
+            System.out.println(data.toString());
 
             String request = JsonConverter.createRequest(Protocol.CMD_IMPORT, data);
             out.println(request);
