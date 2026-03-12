@@ -21,7 +21,7 @@ public class LoginDialog {
         dialog.setTitle("АРМ «Военный состав»");
 
         try {
-            Image icon = new Image("file:star-icon.png");
+            Image icon = new Image("file:star.ico");
             dialog.getIcons().add(icon);
         } catch (Exception e) {
             // игнорируем
