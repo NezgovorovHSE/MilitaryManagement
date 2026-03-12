@@ -143,7 +143,7 @@ public class ClientHandler implements Runnable {
 
     private String handleLogoutCommand() {
         if (currentUser != null) {
-            AuditLogger.log(currentUser.getId(), "ВЫХОД", "");
+            AuditLogger.logLogout(currentUser.getUsername());
             currentUser = null;
         }
         return ResponseBuilder.successWithMessage("Выход выполнен");
