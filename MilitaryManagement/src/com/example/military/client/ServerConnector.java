@@ -22,7 +22,7 @@ public class ServerConnector {
     private Integer currentUserId = null;
 
     public ServerConnector() {
-        this.host = Protocol.DEFAULT_HOST;
+        this.host = "192.168.31.170";
         this.port = Protocol.DEFAULT_PORT;
     }
 
