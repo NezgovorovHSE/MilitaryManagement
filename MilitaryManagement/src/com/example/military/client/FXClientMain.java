@@ -21,6 +21,7 @@ import javafx.stage.Stage;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 import java.io.File;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -172,8 +173,11 @@ public class FXClientMain extends Application {
 
 // Установка иконки приложения
             try {
-                Image icon = new Image("file:star.ico");
-                primaryStage.getIcons().add(icon);
+                InputStream iconStream = getClass().getResourceAsStream("/com/example/military/client/star-icon.png");
+                if (iconStream != null) {
+                    Image icon = new Image(iconStream);
+                    primaryStage.getIcons().add(icon);
+                }
             } catch (Exception e) {
                 System.out.println("Не удалось загрузить иконку: " + e.getMessage());
             }
@@ -184,7 +188,7 @@ public class FXClientMain extends Application {
             primaryStage.setTitle("АРМ «Военный состав»");
             primaryStage.setScene(scene);
             primaryStage.setMaximized(true);
-            
+
             primaryStage.setOnCloseRequest(event -> {
                 if (currentUser != null) {
                     connector.logout();
