@@ -56,7 +56,14 @@ public class DatabaseManager {
             pstmt.setInt(1, recordId);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                return rs.getInt("locked_by");
+                int owner = rs.getInt("locked_by");
+                // Преобразуем 0 в null (означает "не заблокировано")
+                if (owner == 0) {
+                    System.out.println("🔍 checkLockOwner для ID=" + recordId + " вернул 0, интерпретируем как null");
+                    return null;
+                }
+                System.out.println("🔍 checkLockOwner для ID=" + recordId + " вернул: " + owner);
+                return owner;
             }
         }
         return null;
@@ -375,16 +382,15 @@ public class DatabaseManager {
      */
     public MilitaryPerson loadPersonById(int id) throws SQLException {
         String sql = "SELECT * FROM personnel WHERE id = ?";
-
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, id);
             ResultSet rs = pstmt.executeQuery();
-
             if (rs.next()) {
-                return createPersonFromResultSet(rs);
+                MilitaryPerson person = createPersonFromResultSet(rs);
+                person.setId(rs.getInt("id")); // ← обязательно!
+                return person;
             }
         }
-
         return null;
     }
 
