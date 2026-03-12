@@ -185,7 +185,7 @@ public class FXClientMain extends Application {
 
 // Сцена
             Scene scene = new Scene(root, 1750, 840);
-            scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+            scene.getStylesheets().add("file:out/com/example/military/client/style.css");
             primaryStage.setTitle("АРМ «Военный состав»");
             primaryStage.setScene(scene);
             primaryStage.setMaximized(true);

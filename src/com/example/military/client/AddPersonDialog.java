@@ -450,7 +450,7 @@ public class AddPersonDialog {
         });
 
         Scene scene = new Scene(root, 1000, 508);
-        scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+        scene.getStylesheets().add("file:out/com/example/military/client/style.css");
         dialog.setScene(scene);
         dialog.showAndWait();
     }

@@ -95,7 +95,7 @@ public class LoginDialog {
         root.getChildren().addAll(titleLabel, grid, errorLabel, buttonBox);
 
         Scene scene = new Scene(root, 400, 300);
-        scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+        scene.getStylesheets().add("file:out/com/example/military/client/style.css");
         dialog.setScene(scene);
 
         // Обработчики
