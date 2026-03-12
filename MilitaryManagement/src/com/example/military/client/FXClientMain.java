@@ -184,6 +184,14 @@ public class FXClientMain extends Application {
             primaryStage.setTitle("АРМ «Военный состав»");
             primaryStage.setScene(scene);
             primaryStage.setMaximized(true);
+            
+            primaryStage.setOnCloseRequest(event -> {
+                if (currentUser != null) {
+                    connector.logout();
+                }
+                Platform.exit();
+            });
+
             primaryStage.show();
 
         } catch (Exception e) {
