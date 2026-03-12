@@ -172,7 +172,7 @@ public class FXClientMain extends Application {
 
 // Установка иконки приложения
             try {
-                Image icon = new Image("file:star-icon.png");
+                Image icon = new Image("file:star.ico");
                 primaryStage.getIcons().add(icon);
             } catch (Exception e) {
                 System.out.println("Не удалось загрузить иконку: " + e.getMessage());
