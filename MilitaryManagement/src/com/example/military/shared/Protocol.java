@@ -15,7 +15,9 @@ public class Protocol {
     public static final String CMD_GET_BY_ID = "GET_BY_ID";    // Получить по индексу
     public static final String CMD_DELETE = "DELETE";          // Удалить
     public static final String CMD_CLEAR = "CLEAR";            // Очистить список
-    public static final String CMD_COUNT = "COUNT";            // Получить количество
+    public static final String CMD_COUNT = "COUNT";
+    public static final String CMD_LOG_EXPORT = "LOG_EXPORT";
+    public static final String CMD_LOG_IMPORT = "LOG_IMPORT";// Получить количество
 
     // Ответы сервера
     public static final String STATUS_OK = "OK";
