@@ -63,7 +63,7 @@ public class FXClientMain extends Application {
 
             // Показываем окно входа
             User loggedUser = LoginDialog.show(primaryStage, connector);
-            System.out.println("=== ВЕРНУЛИСЬ ИЗ LOGINDIALOG ===");
+            System.out.println("=== ПОСЛЕ LOGINDIALOG ===");
             System.out.println("loggedUser = " + (loggedUser != null ? loggedUser.getFullName() : "null"));
 
             if (loggedUser == null) {
@@ -71,7 +71,6 @@ public class FXClientMain extends Application {
                 Platform.exit();
                 return;
             }
-            System.out.println("Продолжаем с пользователем: " + loggedUser.getFullName());
 
             this.currentUser = loggedUser;
 
@@ -99,10 +98,8 @@ public class FXClientMain extends Application {
 
 // Проверка подключения
             checkServerConnection();
-
 // Создание таблицы
             table = new TableView<>();
-
 // Обработчик двойного клика для редактирования
             table.setRowFactory(tv -> {
                 TableRow<MilitaryPerson> row = new TableRow<>();
@@ -122,7 +119,6 @@ public class FXClientMain extends Application {
 
             updateTableColumns(currentFilterType);
             loadData();
-
 // Верхняя панель с фильтром и кнопками в один ряд
             HBox topPanel = new HBox(20);
             topPanel.setPadding(new Insets(10));
@@ -190,8 +186,7 @@ public class FXClientMain extends Application {
                 if (cssFile.exists()) {
                     scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
                     System.out.println("CSS загружен из target");
-                    return;
-                }
+                                    }
             } catch (Exception e) {}
 
             // Для второго устройства (out)
@@ -200,7 +195,6 @@ public class FXClientMain extends Application {
                 if (cssFile.exists()) {
                     scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
                     System.out.println("CSS загружен из out");
-                    return;
                 }
             } catch (Exception e) {}
             primaryStage.setTitle("АРМ «Военный состав»");
@@ -213,7 +207,6 @@ public class FXClientMain extends Application {
                 }
                 Platform.exit();
             });
-
             primaryStage.show();
 
         } catch (Exception e) {

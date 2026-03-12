@@ -456,7 +456,6 @@ public class AddPersonDialog {
             if (cssFile.exists()) {
                 scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
                 System.out.println("AddPersonDialog: CSS загружен из target");
-                return;
             }
         } catch (Exception e) {}
 
@@ -466,7 +465,6 @@ public class AddPersonDialog {
             if (cssFile.exists()) {
                 scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
                 System.out.println("AddPersonDialog: CSS загружен из out");
-                return;
             }
         } catch (Exception e) {}
         dialog.setScene(scene);
