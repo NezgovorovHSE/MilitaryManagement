@@ -2,6 +2,7 @@ package com.example.military.client;
 
 import com.example.military.client.AddPersonDialog;
 import com.example.military.model.*;
+import com.example.military.server.AuditLogger;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -1030,6 +1031,7 @@ public class FXClientMain extends Application {
         if (file != null) {
             int added = connector.importFromFile(file.getAbsolutePath());
             if (added >= 0) {
+                connector.logImport(file.getName(), added);
                 showInfoDialog(primaryStage, "Импорт завершен", "Добавлено записей: " + added);
                 loadData();
             } else {
@@ -1055,6 +1057,7 @@ public class FXClientMain extends Application {
             boolean success = connector.exportToFile(file.getAbsolutePath(),
                     new ArrayList<>(personData));
             if (success) {
+                connector.logExport(file.getName(), personData.size());
                 showInfoDialog(primaryStage, "Экспорт завершен", "Файл сохранен:\n" + file.getAbsolutePath());
             } else {
                 showInfoDialog(primaryStage, "Ошибка", "Не удалось экспортировать данные");
