@@ -9,6 +9,8 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -25,11 +27,16 @@ public class AddPersonDialog {
         dialog.initOwner(owner);
         dialog.setTitle(isEditMode ? "Редактирование военнослужащего" : "Добавление военнослужащего");
 
+        // Добавляем иконку приложения
         try {
-            Image icon = new Image("file:star.ico");
-            dialog.getIcons().add(icon);
+            InputStream iconStream = Thread.currentThread().getContextClassLoader()
+                    .getResourceAsStream("com/example/military/client/star-icon.png");
+            if (iconStream != null) {
+                Image icon = new Image(iconStream);
+                dialog.getIcons().add(icon);
+            }
         } catch (Exception e) {
-            // игнорируем, если файл не найден
+            // игнорируем
         }
 
         if (isEditMode) {
