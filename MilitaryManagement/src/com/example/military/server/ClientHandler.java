@@ -150,18 +150,61 @@ public class ClientHandler implements Runnable {
     }
 
     private String handleImportCommand(String requestJson) {
-        JsonObject data = JsonConverter.extractData(requestJson);
-        String filePath = data.get("filePath").getAsString();
+        System.out.println("=== IMPORT RAW REQUEST ===");
+        System.out.println(requestJson);
 
         try {
-            List<MilitaryPerson> importedList = FileManager.loadFromFile(filePath);
+            JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
+            System.out.println("=== REQUEST PARSED ===");
+            System.out.println(request.toString());
+
+            JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
+            System.out.println("=== DATA OBJECT ===");
+            System.out.println(data != null ? data.toString() : "null");
+
+            if (data == null) {
+                return ResponseBuilder.error("Нет данных в запросе");
+            }
+
+            String filePath = data.get("filePath").getAsString();
+            System.out.println("=== FILE PATH ===");
+            System.out.println(filePath);
+
+            int userId = data.has("userId") ? data.get("userId").getAsInt() : 0;
+
+            // Читаем файл как JSON
+            StringBuilder content = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    content.append(line);
+                }
+            }
+            System.out.println("=== FILE CONTENT ===");
+            System.out.println(content.toString());
+
+            System.out.println("=== BEFORE PARSING ===");
+            System.out.println("Content length: " + content.length());
+            try {
+                List<MilitaryPerson> importedList = JsonConverter.listFromJson(content.toString());
+                System.out.println("=== AFTER PARSING ===");
+                System.out.println("List size: " + (importedList != null ? importedList.size() : "null"));
+            } catch (Exception e) {
+                System.out.println("=== PARSE EXCEPTION ===");
+                e.printStackTrace();
+            }
+
+            // Парсим JSON
+            List<MilitaryPerson> importedList = JsonConverter.listFromJson(content.toString());
+            System.out.println("=== PARSED LIST SIZE ===");
+            System.out.println(importedList != null ? importedList.size() : "null");
+
             if (importedList == null || importedList.isEmpty()) {
-                return ResponseBuilder.error("Файл пуст или не прочитан");
+                return ResponseBuilder.error("Файл пуст или не содержит записей");
             }
 
             int added = 0;
             for (MilitaryPerson person : importedList) {
-                // Проверяем, есть ли уже такой (по фамилии + дате рождения)
                 List<MilitaryPerson> existing = service.getAllPersons();
                 boolean exists = existing.stream().anyMatch(p ->
                         p.getLastName().equals(person.getLastName()) &&
@@ -173,7 +216,11 @@ public class ClientHandler implements Runnable {
                     added++;
                 }
             }
-            AuditLogger.logImport(getCurrentUsername(), filePath, added);
+
+            // Логируем импорт
+            User user = service.getUserById(userId);
+            String username = (user != null) ? user.getUsername() : "system";
+            AuditLogger.log(username, "ВЫГРУЗКА", "Из файла: " + filePath + ", добавлено: " + added + " записей");
 
             return ResponseBuilder.successWithMessage("Импортировано: " + added);
 
@@ -222,6 +269,10 @@ public class ClientHandler implements Runnable {
                     return handleLockCommand(requestJson);
                 case "UNLOCK":
                     return handleUnlockCommand(requestJson);
+                case Protocol.CMD_LOG_EXPORT:
+                    return handleLogExportCommand(requestJson);
+                case Protocol.CMD_LOG_IMPORT:
+                    return handleLogImportCommand(requestJson);
                 default:
                     return ResponseBuilder.error("Неизвестная команда: " + command);
             }
@@ -266,6 +317,49 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             logger.error("Ошибка обработки логина", e);
             return ResponseBuilder.error("Ошибка сервера");
+        }
+    }
+
+    private String handleLogExportCommand(String requestJson) {
+        try {
+            JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
+            JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
+
+            String filename = data.get("filename").getAsString();
+            int count = data.get("count").getAsInt();
+            int userId = data.has("userId") ? data.get("userId").getAsInt() : 0;
+
+            // Получаем пользователя
+            User user = service.getUserById(userId);
+            String username = (user != null) ? user.getUsername() : "system";
+
+            AuditLogger.log(username, "СОХРАНЕНИЕ", "В файл: " + filename + ", записей: " + count);
+
+            return ResponseBuilder.successWithMessage("Logged");
+        } catch (Exception e) {
+            logger.error("Ошибка логирования экспорта", e);
+            return ResponseBuilder.error("Error");
+        }
+    }
+
+    private String handleLogImportCommand(String requestJson) {
+        try {
+            JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
+            JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
+
+            String filename = data.get("filename").getAsString();
+            int added = data.get("added").getAsInt();
+            int userId = data.has("userId") ? data.get("userId").getAsInt() : 0;
+
+            User user = service.getUserById(userId);
+            String username = (user != null) ? user.getUsername() : "system";
+
+            AuditLogger.log(username, "ВЫГРУЗКА", "Из файла: " + filename + ", добавлено: " + added + " записей");
+
+            return ResponseBuilder.successWithMessage("Logged");
+        } catch (Exception e) {
+            logger.error("Ошибка логирования импорта", e);
+            return ResponseBuilder.error("Error");
         }
     }
 
