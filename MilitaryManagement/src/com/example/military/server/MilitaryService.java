@@ -96,8 +96,10 @@ public class MilitaryService {
         try {
             MilitaryPerson person = dbManager.loadPersonById(id);
             if (person != null) {
+                System.out.println("getPersonById для ID=" + id + " вернул: " + person.getLastName() + ", ID в объекте=" + person.getId());
                 logger.log("🔍 Запрошен военнослужащий ID " + id + ": " + person.getLastName());
             } else {
+                System.out.println("getPersonById для ID=" + id + " вернул null");
                 logger.log("🔍 Военнослужащий ID " + id + " не найден");
             }
             return person;
