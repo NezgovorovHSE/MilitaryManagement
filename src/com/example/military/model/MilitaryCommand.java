@@ -4,10 +4,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class MilitaryCommand extends MilitaryPerson {
-    private String militaryDistrict;   // название округа
-    private String position;           // должность
-    private int yearsOfService;        // выслуга лет
-    private double allowance;          // сумма надбавки
+    private String militaryDistrict;
+    private String position;
+    private int yearsOfService;
+    private double allowance;
 
     public MilitaryCommand(String lastName, String company, String rank,
                            LocalDate birthDate, LocalDate enlistmentDate,
@@ -21,7 +21,6 @@ public class MilitaryCommand extends MilitaryPerson {
         this.allowance = allowance;
     }
 
-    // Геттеры и сеттеры
     public String getMilitaryDistrict() {
         return militaryDistrict;
     }

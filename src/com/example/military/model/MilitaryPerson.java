@@ -4,14 +4,15 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class MilitaryPerson {
-    private String lastName;           // фамилия
-    private String company;            // рота
-    private String rank;               // звание
-    private LocalDate birthDate;       // дата рождения
-    private LocalDate enlistmentDate;  // дата поступления на службу
-    private String unit;               // часть
-    private double salary;             // зарплата
+    private String lastName;
+    private String company;
+    private String rank;
+    private LocalDate birthDate;
+    private LocalDate enlistmentDate;
+    private String unit;
+    private double salary;
     private int id;
+    private int displayNumber;
 
     public MilitaryPerson(String lastName, String company, String rank,
                           LocalDate birthDate, LocalDate enlistmentDate,
@@ -25,8 +26,6 @@ public class MilitaryPerson {
         this.salary = salary;
     }
 
-    private int displayNumber; // только для отображения в таблице
-
     public int getDisplayNumber() {
         return displayNumber;
     }
@@ -35,7 +34,6 @@ public class MilitaryPerson {
         this.displayNumber = displayNumber;
     }
 
-    // Геттеры и сеттеры
     public int getId() {
         return id;
     }
@@ -92,7 +90,6 @@ public class MilitaryPerson {
         this.unit = unit;
     }
 
-    // Новый геттер и сеттер для salary
     public double getSalary() {
         return salary;
     }

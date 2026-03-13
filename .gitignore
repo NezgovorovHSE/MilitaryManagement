@@ -62,18 +62,5 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
-# IDE
-.idea/
-*.iml
-*.iws
-*.ipr
-out/
-build/
-
-# Логи
-*.log
-*.db
-
 # Сборка
 dist/
-*.exe

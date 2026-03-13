@@ -1,8 +1,6 @@
 package com.example.military.client;
 
 import com.example.military.model.*;
-import com.example.military.server.RequestParser;
-import com.example.military.server.ResponseBuilder;
 import com.example.military.shared.JsonConverter;
 import com.example.military.shared.Protocol;
 import com.google.gson.JsonObject;
@@ -52,14 +50,10 @@ public class ServerConnector {
             if (in != null) in.close();
             if (out != null) out.close();
             if (socket != null) socket.close();
-        } catch (IOException e) {
-            // ignore
-        }
+        } catch (IOException ignored) {}
     }
 
     public boolean lockRecord(int recordId) {
-        System.out.println("📤 Клиент: отправка LOCK для ID=" + recordId);
-        System.out.println("currentUserId = " + currentUserId);
         if (!connect()) return false;
 
         try {
@@ -74,8 +68,6 @@ public class ServerConnector {
             out.flush();
 
             String response = in.readLine();
-            System.out.println("📥 Клиент: ответ на LOCK: " + response);
-
             disconnect();
 
             return response != null && Protocol.STATUS_OK.equals(JsonConverter.extractStatus(response));
@@ -87,9 +79,6 @@ public class ServerConnector {
     }
 
     public boolean unlockRecord(int recordId) {
-        System.out.println("📤 Клиент: отправка UNLOCK для ID=" + recordId);
-        System.out.println("currentUserId = " + currentUserId);
-
         if (!connect()) return false;
 
         try {
@@ -104,8 +93,6 @@ public class ServerConnector {
             out.flush();
 
             String response = in.readLine();
-            System.out.println("📥 Клиент: ответ на UNLOCK: " + response);
-
             disconnect();
 
             return response != null && Protocol.STATUS_OK.equals(JsonConverter.extractStatus(response));
@@ -123,12 +110,9 @@ public class ServerConnector {
     }
 
     public List<MilitaryPerson> getAllPersons() {
-        System.out.println("=== getAllPersons вызван ===");
-        System.out.println("currentUserId = " + currentUserId);
         if (!connect()) return null;
 
         try {
-            // Добавляем userId в запрос
             JsonObject data = new JsonObject();
             if (currentUserId != null) {
                 data.addProperty("userId", currentUserId);
@@ -145,7 +129,6 @@ public class ServerConnector {
                 return null;
             }
 
-            // Парсим JSON-ответ
             JsonObject jsonResponse = new com.google.gson.JsonParser().parse(response).getAsJsonObject();
             String status = jsonResponse.get(Protocol.FIELD_STATUS).getAsString();
 
@@ -173,29 +156,19 @@ public class ServerConnector {
     }
 
     public int addPerson(MilitaryPerson person) {
-        System.out.println("=== addPerson вызван ===");
-        System.out.println("currentUserId = " + currentUserId);
         if (!connect()) return -1;
 
         try {
-            // Добавляем userId в запрос
             JsonObject data = new JsonObject();
             data.add("person", JsonConverter.getGson().toJsonTree(person));
             if (currentUserId != null) {
                 data.addProperty("userId", currentUserId);
             }
-            // Используем правильный метод для создания запроса
             String request = JsonConverter.createRequest(Protocol.CMD_ADD, data);
-            System.out.println("=== request ===");
-            System.out.println(request);
-
             out.println(request);
             out.flush();
 
             String response = in.readLine();
-            System.out.println("=== response ===");
-            System.out.println(response);
-
             disconnect();
 
             if (response != null && Protocol.STATUS_OK.equals(JsonConverter.extractStatus(response))) {
@@ -238,28 +211,19 @@ public class ServerConnector {
     }
 
     public boolean updatePerson(MilitaryPerson person) {
-        System.out.println("=== updatePerson вызван ===");
-        System.out.println("currentUserId = " + currentUserId);
         if (!connect()) return false;
 
         try {
-            // Создаём объект data с person и userId
             JsonObject data = new JsonObject();
             data.add("person", JsonConverter.getGson().toJsonTree(person));
             if (currentUserId != null) {
                 data.addProperty("userId", currentUserId);
             }
             String request = JsonConverter.createRequest(Protocol.CMD_UPDATE, data);
-            System.out.println("=== request ===");
-            System.out.println(request);
-
             out.println(request);
             out.flush();
 
             String response = in.readLine();
-            System.out.println("=== response ===");
-            System.out.println(response);
-
             disconnect();
 
             return response != null && Protocol.STATUS_OK.equals(JsonConverter.extractStatus(response));
@@ -271,8 +235,6 @@ public class ServerConnector {
     }
 
     public boolean deletePerson(int id) {
-        System.out.println("=== deletePerson вызван ===");
-        System.out.println("currentUserId = " + currentUserId);
         if (!connect()) return false;
 
         try {
@@ -283,16 +245,10 @@ public class ServerConnector {
             }
 
             String request = JsonConverter.createRequest(Protocol.CMD_DELETE, data);
-            System.out.println("=== request ===");
-            System.out.println(request);
-
             out.println(request);
             out.flush();
 
             String response = in.readLine();
-            System.out.println("=== response ===");
-            System.out.println(response);
-
             disconnect();
 
             return response != null && Protocol.STATUS_OK.equals(JsonConverter.extractStatus(response));
@@ -329,10 +285,8 @@ public class ServerConnector {
         if (data == null || data.isEmpty()) return false;
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
-            // Заголовки CSV
             writer.println("ID,Фамилия,Рота,Звание,Дата рождения,Дата призыва,Часть,Зарплата,Тип,Дополнительно");
 
-            // Данные
             for (MilitaryPerson p : data) {
                 StringBuilder line = new StringBuilder();
                 line.append(p.getId()).append(",");
@@ -426,18 +380,8 @@ public class ServerConnector {
     }
 
     public boolean logout() {
-        System.out.println("=== logout вызван ===");
-        System.out.println("currentUserId до сброса = " + currentUserId);
-
-        // Получаем имя метода, который вызвал logout
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        if (stackTrace.length > 2) {
-            System.out.println("Вызван из: " + stackTrace[2].getClassName() + "." + stackTrace[2].getMethodName());
-        }
-
         if (!connect()) {
             this.currentUserId = null;
-            System.out.println("Не удалось подключиться, currentUserId сброшен");
             return false;
         }
 
@@ -453,20 +397,14 @@ public class ServerConnector {
 
             String response = in.readLine();
             disconnect();
-
-            // Сбрасываем текущего пользователя независимо от ответа сервера
             this.currentUserId = null;
-            System.out.println("currentUserId сброшен после запроса");
 
-            boolean success = response != null && Protocol.STATUS_OK.equals(JsonConverter.extractStatus(response));
-            System.out.println("Результат logout: " + (success ? "успех" : "неудача"));
-            return success;
+            return response != null && Protocol.STATUS_OK.equals(JsonConverter.extractStatus(response));
 
         } catch (Exception e) {
             e.printStackTrace();
             disconnect();
             this.currentUserId = null;
-            System.out.println("currentUserId сброшен после исключения");
             return false;
         }
     }
@@ -492,12 +430,11 @@ public class ServerConnector {
                 int userId = userData.get("userId").getAsInt();
                 String fullName = userData.get("fullName").getAsString();
 
-                // Сохраняем userId для последующих запросов
                 this.currentUserId = userId;
                 return new User(userId, username, fullName, "");
             } else {
                 this.currentUserId = null;
-                return null;// Сбрасываем при ошибке
+                return null;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -536,9 +473,6 @@ public class ServerConnector {
         try {
             JsonObject data = new JsonObject();
             data.addProperty("filePath", filePath);
-
-            System.out.println("=== IMPORT REQUEST DATA ===");
-            System.out.println(data.toString());
 
             String request = JsonConverter.createRequest(Protocol.CMD_IMPORT, data);
             out.println(request);

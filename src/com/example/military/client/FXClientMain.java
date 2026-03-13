@@ -1,26 +1,20 @@
 package com.example.military.client;
-//Тест для гита 1
-import com.example.military.client.AddPersonDialog;
+
 import com.example.military.model.*;
-import com.example.military.server.AuditLogger;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.concurrent.ScheduledService;
-import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.control.skin.TableHeaderRow;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.animation.PauseTransition;
-import javafx.util.Duration;
+
 import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDate;
@@ -28,11 +22,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.CheckBox;
 import java.util.Timer;
 import java.util.TimerTask;
-import javafx.scene.layout.Region;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,39 +35,28 @@ public class FXClientMain extends Application {
     private Stage primaryStage;
     private ComboBox<String> filterCombo;
     private String currentFilterType = "Все записи";
-    private ScheduledService<Void> backgroundService;
-    private final Object dataLock = new Object();
-    private boolean isRefreshing = false;
     private TextField searchField;
     private User currentUser;
-    private Label userLabel;  // делаем поле класса
+    private Label userLabel;
+    private Timer refreshTimer;
 
     @Override
     public void start(Stage primaryStage) {
-        System.out.println("=== start() вызван ===");
-        System.out.println("Текущий поток: " + Thread.currentThread().getName());
         this.primaryStage = primaryStage;
 
         try {
-            // Инициализация подключения к серверу
             connector = new ServerConnector();
 
-            // Показываем окно входа
             User loggedUser = LoginDialog.show(primaryStage, connector);
-            System.out.println("=== ПОСЛЕ LOGINDIALOG ===");
-            System.out.println("loggedUser = " + (loggedUser != null ? loggedUser.getFullName() : "null"));
 
             if (loggedUser == null) {
-                System.out.println("Пользователь отменил вход, выходим");
                 Platform.exit();
                 return;
             }
 
             this.currentUser = loggedUser;
 
-            List<MilitaryPerson> testList = connector.getAllPersons();
-            System.out.println("Загружено записей после логина: " + (testList != null ? testList.size() : "null"));
-            System.out.println("Вошёл пользователь: " + loggedUser.getFullName());
+            connector.getAllPersons();
 
             searchField = new TextField();
             searchField.setPromptText("Поиск...");
@@ -85,27 +65,22 @@ public class FXClientMain extends Application {
 
             startAutoRefresh(10);
 
-// Инициализация фильтра (ВАЖНО: до loadData!)
             filterCombo = new ComboBox<>();
             filterCombo.getItems().addAll("Все записи", "Военнослужащие", "Командование", "Контрактники", "Награждённые");
             filterCombo.setValue("Все записи");
             filterCombo.setOnAction(e -> loadData());
 
-// Добавляем слушатель на изменение текста
             searchField.textProperty().addListener((observable, oldValue, newValue) -> {
                 applySearchFilter(newValue);
             });
 
-// Проверка подключения
             checkServerConnection();
-// Создание таблицы
             table = new TableView<>();
-// Обработчик двойного клика для редактирования
+
             table.setRowFactory(tv -> {
                 TableRow<MilitaryPerson> row = new TableRow<>();
                 row.setOnMouseClicked(event -> {
                     if (event.getClickCount() == 2 && !row.isEmpty()) {
-                        System.out.println("Двойной клик по строке!");
                         MilitaryPerson selected = row.getItem();
                         if (connector.lockRecord(selected.getId())) {
                             showEditDialog(selected);
@@ -119,12 +94,11 @@ public class FXClientMain extends Application {
 
             updateTableColumns(currentFilterType);
             loadData();
-// Верхняя панель с фильтром и кнопками в один ряд
+
             HBox topPanel = new HBox(20);
             topPanel.setPadding(new Insets(10));
             topPanel.setAlignment(Pos.CENTER_LEFT);
 
-// Кнопки управления
             Button btnAdd = new Button("\uD83D\uDFA3 Добавить");
             Button btnDelete = new Button("✕ Удалить");
             Button btnImport = new Button("▴ Выгрузить из файла");
@@ -135,68 +109,56 @@ public class FXClientMain extends Application {
             btnAdd.setOnAction(e -> showAddDialog());
             btnDelete.setOnAction(e -> deleteSelected());
 
-// Группа фильтра (слева)
             HBox filterGroup = new HBox(10);
             filterGroup.setAlignment(Pos.CENTER_LEFT);
             filterGroup.getChildren().addAll(new Label("Фильтр:"), filterCombo);
 
-// Кнопка выхода и метка пользователя (справа)
             Button btnLogout = new Button("➜] Выйти");
             btnLogout.setOnAction(e -> logout());
 
-            userLabel = new Label(currentUser.getFullName());  // без Label
+            userLabel = new Label(currentUser.getFullName());
             userLabel.setStyle("-fx-text-fill: #E5E9F0; -fx-font-weight: bold;");
 
-// Группа кнопок операций
             HBox operationsGroup = new HBox(10);
             operationsGroup.setAlignment(Pos.CENTER_LEFT);
             operationsGroup.getChildren().addAll(btnAdd, btnDelete, btnImport, btnExport);
 
-// Правая группа (пользователь + выход)
             HBox rightGroup = new HBox(10);
             rightGroup.setAlignment(Pos.CENTER_RIGHT);
             rightGroup.getChildren().addAll(userLabel, btnLogout);
 
-// Растягивающийся разделитель (заполняет пространство между левой и правой группами)
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
 
-// Собираем всё: фильтр → поиск → кнопки операций → разделитель → правая группа
             topPanel.getChildren().addAll(filterGroup, searchField, operationsGroup, spacer, rightGroup);
 
             BorderPane root = new BorderPane();
             root.setTop(topPanel);
             root.setCenter(table);
 
-// Установка иконки приложения
             try {
                 InputStream iconStream = getClass().getResourceAsStream("/com/example/military/client/star-icon.png");
                 if (iconStream != null) {
                     Image icon = new Image(iconStream);
                     primaryStage.getIcons().add(icon);
                 }
-            } catch (Exception e) {
-                System.out.println("Не удалось загрузить иконку: " + e.getMessage());
-            }
+            } catch (Exception ignored) {}
 
-// Сцена
             Scene scene = new Scene(root, 1750, 840);
             try {
                 File cssFile = new File("target/classes/com/example/military/client/style.css");
                 if (cssFile.exists()) {
                     scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-                    System.out.println("CSS загружен из target");
-                                    }
-            } catch (Exception e) {}
+                }
+            } catch (Exception ignored) {}
 
-            // Для второго устройства (out)
             try {
                 File cssFile = new File("out/com/example/military/client/style.css");
                 if (cssFile.exists()) {
                     scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-                    System.out.println("CSS загружен из out");
                 }
-            } catch (Exception e) {}
+            } catch (Exception ignored) {}
+
             primaryStage.setTitle("АРМ «Военный состав»");
             primaryStage.setScene(scene);
             primaryStage.setMaximized(true);
@@ -215,30 +177,23 @@ public class FXClientMain extends Application {
         }
     }
 
-    private Timer refreshTimer;
-
     private void logout() {
         showConfirmDialog(primaryStage, "Подтверждение", "Вы уверены, что хотите выйти?", () -> {
             connector.logout();
             connector.reset();
 
-            // Закрываем текущее окно
             primaryStage.close();
 
-            // Показываем новое окно логина
             User newUser = LoginDialog.show(new Stage(), connector);
             if (newUser != null) {
-                // Обновляем текущего пользователя
                 this.currentUser = newUser;
                 userLabel.setText(currentUser.getFullName());
-                // Очищаем таблицу и перезагружаем данные
                 loadData();
-                // Показываем текущее окно заново
                 primaryStage.show();
             } else {
                 Platform.exit();
             }
-        }); // ← закрываем вызов showConfirmDialog
+        });
     }
 
     private void startAutoRefresh(int seconds) {
@@ -247,11 +202,9 @@ public class FXClientMain extends Application {
             @Override
             public void run() {
                 Platform.runLater(() -> {
-                    // Сохраняем текущее состояние сортировки
                     ObservableList<TableColumn<MilitaryPerson, ?>> sortOrder =
                             FXCollections.observableArrayList(table.getSortOrder());
 
-                    // Сохраняем типы сортировки для каждой колонки
                     Map<TableColumn<MilitaryPerson, ?>, TableColumn.SortType> sortTypes = new HashMap<>();
                     for (TableColumn<MilitaryPerson, ?> col : sortOrder) {
                         sortTypes.put(col, col.getSortType());
@@ -263,7 +216,6 @@ public class FXClientMain extends Application {
                     List<MilitaryPerson> serverList = connector.getAllPersons();
                     if (serverList == null) return;
 
-                    // Фильтруем по типу
                     List<MilitaryPerson> filteredByType = new ArrayList<>();
                     for (MilitaryPerson p : serverList) {
                         if (matchesFilter(p, currentFilter)) {
@@ -271,7 +223,6 @@ public class FXClientMain extends Application {
                         }
                     }
 
-                    // Применяем поиск
                     List<MilitaryPerson> finalList = filteredByType;
                     if (currentSearchText != null && !currentSearchText.trim().isEmpty()) {
                         String lowerSearch = currentSearchText.toLowerCase().trim();
@@ -283,19 +234,15 @@ public class FXClientMain extends Application {
                         }
                     }
 
-                    // Присваиваем номера
                     for (int i = 0; i < finalList.size(); i++) {
                         finalList.get(i).setDisplayNumber(i + 1);
                     }
 
                     List<MilitaryPerson> currentDisplayList = new ArrayList<>(personData);
 
-                    // Сравниваем списки
                     if (!listsAreEqual(currentDisplayList, finalList)) {
-                        // Обновляем данные
                         personData.setAll(finalList);
 
-                        // Восстанавливаем сортировку
                         if (!sortOrder.isEmpty()) {
                             table.getSortOrder().setAll(sortOrder);
                             for (TableColumn<MilitaryPerson, ?> col : sortOrder) {
@@ -319,40 +266,18 @@ public class FXClientMain extends Application {
         }
     }
 
-    private void checkForUpdates() {
-        synchronized (dataLock) {
-            if (isRefreshing) return;
-            isRefreshing = true;
-        }
-
-        Platform.runLater(() -> {
-            List<MilitaryPerson> currentList = new ArrayList<>(personData);
-            List<MilitaryPerson> serverList = connector.getAllPersons();
-
-            if (!listsAreEqual(currentList, serverList)) {
-                loadData(); // обновляем таблицу
-            }
-
-            synchronized (dataLock) {
-                isRefreshing = false;
-            }
-        });
-    }
-
     private boolean listsAreEqual(List<MilitaryPerson> list1, List<MilitaryPerson> list2) {
         if (list1.size() != list2.size()) return false;
         for (int i = 0; i < list1.size(); i++) {
             MilitaryPerson p1 = list1.get(i);
             MilitaryPerson p2 = list2.get(i);
 
-            // Сравниваем по ID и основным полям
             if (p1.getId() != p2.getId()) return false;
             if (!p1.getLastName().equals(p2.getLastName())) return false;
             if (!p1.getCompany().equals(p2.getCompany())) return false;
             if (!p1.getRank().equals(p2.getRank())) return false;
             if (p1.getSalary() != p2.getSalary()) return false;
 
-            // Для дочерних классов добавляем проверку специфических полей
             if (p1 instanceof MilitaryCommand && p2 instanceof MilitaryCommand) {
                 MilitaryCommand cmd1 = (MilitaryCommand) p1;
                 MilitaryCommand cmd2 = (MilitaryCommand) p2;
@@ -361,151 +286,8 @@ public class FXClientMain extends Application {
                 if (cmd1.getYearsOfService() != cmd2.getYearsOfService()) return false;
                 if (cmd1.getAllowance() != cmd2.getAllowance()) return false;
             }
-            // Добавь аналогично для других типов
         }
         return true;
-    }
-
-    private TableView<MilitaryPerson> createTable() {
-        TableView<MilitaryPerson> tableView = new TableView<>();
-
-        // Колонка № — выглядит как обычная, но сортирует по ID
-        TableColumn<MilitaryPerson, Integer> numberCol = new TableColumn<>("№");
-        numberCol.setCellValueFactory(cellData -> {
-            int index = tableView.getItems().indexOf(cellData.getValue()) + 1;
-            return new javafx.beans.property.ReadOnlyObjectWrapper<>(index);
-        });
-        numberCol.setPrefWidth(60);
-        numberCol.setSortable(true);
-        numberCol.setUserData(0); // 0 - ASC, 1 - DESC
-
-        numberCol.sortTypeProperty().addListener((obs, oldType, newType) -> {
-            if (newType == null) {
-                // Достигнуто состояние без сортировки — переключаем на противоположное
-                TableColumn.SortType next = (oldType == TableColumn.SortType.ASCENDING)
-                        ? TableColumn.SortType.DESCENDING
-                        : TableColumn.SortType.ASCENDING;
-                // Используем Platform.runLater, чтобы избежать рекурсивного вызова
-                Platform.runLater(() -> numberCol.setSortType(next));
-            } else {
-                // Нормальное изменение направления — переключаем userData
-                int current = (int) numberCol.getUserData();
-                numberCol.setUserData((current + 1) % 2);
-            }
-        });
-
-        numberCol.setComparator((a, b) -> {
-            int state = (int) numberCol.getUserData();
-
-            MilitaryPerson p1 = tableView.getItems().get(a - 1);
-            MilitaryPerson p2 = tableView.getItems().get(b - 1);
-
-            if (state == 0) {
-                return Integer.compare(p1.getId(), p2.getId()); // ASC
-            } else {
-                return Integer.compare(p2.getId(), p1.getId()); // DESC
-            }
-        });
-
-        // Колонка ID (скрытая)
-        TableColumn<MilitaryPerson, Integer> idCol = new TableColumn<>("ID");
-        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
-        idCol.setPrefWidth(50);
-        idCol.setVisible(true);
-        idCol.setComparator((a, b) -> Integer.compare(a, b));
-
-        // Остальные колонки
-        TableColumn<MilitaryPerson, String> lastNameCol = new TableColumn<>("Фамилия");
-        lastNameCol.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-        lastNameCol.setPrefWidth(180);
-
-        TableColumn<MilitaryPerson, String> companyCol = new TableColumn<>("Рота");
-        companyCol.setCellValueFactory(new PropertyValueFactory<>("company"));
-        companyCol.setPrefWidth(300);
-
-        TableColumn<MilitaryPerson, String> rankCol = new TableColumn<>("Звание");
-        rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
-        rankCol.setPrefWidth(180);
-
-        TableColumn<MilitaryPerson, String> salaryCol = new TableColumn<>("Зарплата");
-        salaryCol.setCellValueFactory(cellData -> {
-            double salary = cellData.getValue().getSalary();
-            return new javafx.beans.property.SimpleStringProperty(String.format("%.0f", salary));
-        });
-        salaryCol.setPrefWidth(95);
-
-        TableColumn<MilitaryPerson, String> typeCol = new TableColumn<>("Тип");
-        typeCol.setCellValueFactory(cellData -> {
-            MilitaryPerson p = cellData.getValue();
-            String type = "Обычный";
-            if (p instanceof MilitaryCommand) type = "Управление";
-            else if (p instanceof MilitaryContract) type = "Контракт";
-            else if (p instanceof MilitaryAwarded) type = "Награждён";
-            return new javafx.beans.property.SimpleStringProperty(type);
-        });
-        typeCol.setPrefWidth(100);
-
-        TableColumn<MilitaryPerson, String> birthDateCol = new TableColumn<>("Дата рождения");
-        birthDateCol.setCellValueFactory(cellData -> {
-            LocalDate date = cellData.getValue().getBirthDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    date != null ? date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : ""
-            );
-        });
-        birthDateCol.setPrefWidth(135);
-
-        TableColumn<MilitaryPerson, String> enlistDateCol = new TableColumn<>("Дата поступления");
-        enlistDateCol.setCellValueFactory(cellData -> {
-            LocalDate date = cellData.getValue().getEnlistmentDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    date != null ? date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : ""
-            );
-        });
-        enlistDateCol.setPrefWidth(150);
-
-        TableColumn<MilitaryPerson, String> unitCol = new TableColumn<>("Часть");
-        unitCol.setCellValueFactory(new PropertyValueFactory<>("unit"));
-        unitCol.setPrefWidth(75);
-
-        TableColumn<MilitaryPerson, String> extraCol = new TableColumn<>("Доп. поля");
-        extraCol.setCellValueFactory(cellData -> {
-            MilitaryPerson p = cellData.getValue();
-            String extraInfo = "";
-
-            System.out.println("Тип объекта: " + p.getClass().getSimpleName());
-
-            if (p instanceof MilitaryCommand) {
-                MilitaryCommand cmd = (MilitaryCommand) p;
-                extraInfo = cmd.getMilitaryDistrict() + ", " +
-                        cmd.getPosition() + ", " +
-                        cmd.getYearsOfService() + " лет, надб. " + cmd.getAllowance();
-                System.out.println("Командование: " + extraInfo); // отладка
-            } else if (p instanceof MilitaryContract) {
-                MilitaryContract contract = (MilitaryContract) p;
-                extraInfo = contract.getContractPeriod() + ", прот. " + contract.getProtocolNumber();
-                System.out.println("Контракт: " + extraInfo); // отладка
-            } else if (p instanceof MilitaryAwarded) {
-                MilitaryAwarded awarded = (MilitaryAwarded) p;
-                extraInfo = awarded.getAwardName() + ", премия " + awarded.getPrize() +
-                        ", надб. " + awarded.getAllowance();
-                System.out.println("Награда: " + extraInfo); // отладка
-            }
-
-            return new javafx.beans.property.SimpleStringProperty(extraInfo);
-        });
-        extraCol.setPrefWidth(250);
-
-        tableView.getColumns().addAll(numberCol, idCol, lastNameCol, companyCol,
-                rankCol, salaryCol, typeCol);
-
-        // Двойной клик для деталей
-        tableView.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                showDetailsDialog(tableView.getSelectionModel().getSelectedItem());
-            }
-        });
-
-        return tableView;
     }
 
     private void checkServerConnection() {
@@ -524,7 +306,6 @@ public class FXClientMain extends Application {
     private void updateTableColumns(String filterType) {
         table.getColumns().clear();
 
-        // Базовые колонки (есть всегда)
         TableColumn<MilitaryPerson, Integer> numberCol = new TableColumn<>("№");
         numberCol.setCellValueFactory(cellData -> {
             int index = table.getItems().indexOf(cellData.getValue()) + 1;
@@ -544,17 +325,12 @@ public class FXClientMain extends Application {
         rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
         rankCol.setPrefWidth(180);
 
-        // ДАТА РОЖДЕНИЯ
-        // ДАТА РОЖДЕНИЯ - ИСПРАВЛЕННАЯ ВЕРСИЯ
         TableColumn<MilitaryPerson, LocalDate> birthDateCol = new TableColumn<>("Дата рождения");
-
-// Получаем дату из объекта
         birthDateCol.setCellValueFactory(cellData -> {
             LocalDate date = cellData.getValue().getBirthDate();
             return new javafx.beans.property.SimpleObjectProperty<>(date);
         });
 
-// Форматируем отображение
         birthDateCol.setCellFactory(col -> new TableCell<MilitaryPerson, LocalDate>() {
             private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -569,26 +345,21 @@ public class FXClientMain extends Application {
             }
         });
 
-// Явно задаём компаратор для сортировки
         birthDateCol.setComparator((date1, date2) -> {
             if (date1 == null && date2 == null) return 0;
-            if (date1 == null) return 1;  // null даты в конец
+            if (date1 == null) return 1;
             if (date2 == null) return -1;
             return date1.compareTo(date2);
         });
 
         birthDateCol.setPrefWidth(135);
 
-        // ДАТА ПОСТУПЛЕНИЯ
         TableColumn<MilitaryPerson, LocalDate> enlistDateCol = new TableColumn<>("Дата поступления");
-
-// Получаем дату из объекта
         enlistDateCol.setCellValueFactory(cellData -> {
             LocalDate date = cellData.getValue().getEnlistmentDate();
             return new javafx.beans.property.SimpleObjectProperty<>(date);
         });
 
-// Форматируем отображение
         enlistDateCol.setCellFactory(col -> new TableCell<MilitaryPerson, LocalDate>() {
             private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -603,10 +374,9 @@ public class FXClientMain extends Application {
             }
         });
 
-// Явно задаём компаратор для сортировки
         enlistDateCol.setComparator((date1, date2) -> {
             if (date1 == null && date2 == null) return 0;
-            if (date1 == null) return 1;  // null даты в конец
+            if (date1 == null) return 1;
             if (date2 == null) return -1;
             return date1.compareTo(date2);
         });
@@ -625,11 +395,9 @@ public class FXClientMain extends Application {
         salaryCol.setComparator(Comparator.comparingDouble(Double::parseDouble));
         salaryCol.setPrefWidth(95);
 
-        // Добавляем базовые колонки
         table.getColumns().addAll(numberCol, lastNameCol, companyCol, rankCol,
                 birthDateCol, enlistDateCol, unitCol, salaryCol);
 
-        // Добавляем специфические колонки в зависимости от типа
         if (filterType.equals("Командование")) {
             TableColumn<MilitaryPerson, String> districtCol = new TableColumn<>("Округ");
             districtCol.setCellValueFactory(cellData -> {
@@ -670,11 +438,9 @@ public class FXClientMain extends Application {
             });
             cmdAllowanceCol.setPrefWidth(100);
 
-// Добавляем в таблицу
             table.getColumns().addAll(districtCol, positionCol, yearsCol, cmdAllowanceCol);
         }
         else if (filterType.equals("Контрактники")) {
-            // колонки для контрактников
             TableColumn<MilitaryPerson, String> periodCol = new TableColumn<>("Период");
             periodCol.setCellValueFactory(cellData -> {
                 MilitaryContract contract = (MilitaryContract) cellData.getValue();
@@ -704,13 +470,11 @@ public class FXClientMain extends Application {
 
             contractDateCol.setComparator((date1, date2) -> {
                 if (date1 == null && date2 == null) return 0;
-                if (date1 == null) return 1;  // null в конец
+                if (date1 == null) return 1;
                 if (date2 == null) return -1;
                 return date1.compareTo(date2);
             });
             contractDateCol.setPrefWidth(180);
-
-// Добавляем в таблицу вместе с существующими колонками
 
             TableColumn<MilitaryPerson, String> protocolCol = new TableColumn<>("Номер протокола");
             protocolCol.setCellValueFactory(cellData -> {
@@ -722,7 +486,6 @@ public class FXClientMain extends Application {
             table.getColumns().addAll(periodCol, contractDateCol, protocolCol);
         }
         else if (filterType.equals("Награждённые")) {
-            // колонки для награждённых
             TableColumn<MilitaryPerson, String> awardCol = new TableColumn<>("Награда");
             awardCol.setCellValueFactory(cellData -> {
                 MilitaryAwarded awarded = (MilitaryAwarded) cellData.getValue();
@@ -783,7 +546,6 @@ public class FXClientMain extends Application {
             }
         }
 
-        // Применяем текущий поиск, если есть
         String currentSearch = searchField.getText();
         if (currentSearch != null && !currentSearch.trim().isEmpty()) {
             List<MilitaryPerson> searchResults = new ArrayList<>();
@@ -796,12 +558,10 @@ public class FXClientMain extends Application {
             filteredList = searchResults;
         }
 
-        // Присваиваем порядковые номера
         for (int i = 0; i < filteredList.size(); i++) {
             filteredList.get(i).setDisplayNumber(i + 1);
         }
 
-        // Перестраиваем колонки перед обновлением данных
         updateTableColumns(currentFilterType);
 
         if (personData == null) {
@@ -812,21 +572,7 @@ public class FXClientMain extends Application {
         }
     }
 
-    private void showAlert(Stage owner, String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-
-        if (owner != null) {
-            alert.initOwner(owner);
-        }
-
-        alert.showAndWait();
-    }
-
     private void showEditDialog(MilitaryPerson person) {
-        // Будем использовать ту же форму, но с предзаполненными полями
         AddPersonDialog.show(primaryStage, connector, person, this::loadData);
     }
 
@@ -841,7 +587,6 @@ public class FXClientMain extends Application {
         confirm.setTitle("Подтверждение");
         confirm.setHeaderText(null);
         confirm.setContentText("Удалить " + selected.getLastName() + " (ID: " + selected.getId() + ")?");
-
         confirm.initOwner(primaryStage);
 
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
@@ -859,42 +604,14 @@ public class FXClientMain extends Application {
         AddPersonDialog.show(primaryStage, connector, null, this::loadData);
     }
 
-    private void showDetailsDialog(MilitaryPerson person) {
-        if (person == null) return;
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Детальная информация");
-        alert.setHeaderText(person.getLastName() + " (" + person.getRank() + ")");
-
-        StringBuilder content = new StringBuilder();
-        content.append("Фамилия: ").append(person.getLastName()).append("\n");
-        content.append("Рота: ").append(person.getCompany()).append("\n");
-        content.append("TableColumn<>(\"Зарплата\");: ").append(person.getRank()).append("\n");
-        content.append("Зарплата: ").append(person.getSalary()).append("\n");
-
-        if (person instanceof MilitaryCommand) {
-            MilitaryCommand cmd = (MilitaryCommand) person;
-            content.append("Округ: ").append(cmd.getMilitaryDistrict()).append("\n");
-            content.append("Должность: ").append(cmd.getPosition()).append("\n");
-            content.append("Выслуга лет: ").append(cmd.getYearsOfService()).append("\n");
-            content.append("Надбавка: ").append(cmd.getAllowance()).append("\n");
-        }
-
-        alert.setContentText(content.toString());
-        alert.showAndWait();
-    }
-
     private void applySearchFilter(String searchText) {
         if (personData == null) return;
 
-        // Сохраняем текущий фильтр
         currentFilterType = filterCombo.getValue();
 
-        // Получаем все данные
         List<MilitaryPerson> allData = connector.getAllPersons();
         if (allData == null) return;
 
-        // Сначала фильтруем по типу
         List<MilitaryPerson> filteredByType = new ArrayList<>();
         for (MilitaryPerson p : allData) {
             if (matchesFilter(p, currentFilterType)) {
@@ -902,19 +619,15 @@ public class FXClientMain extends Application {
             }
         }
 
-        // Если поиск пустой - показываем отфильтрованные по типу
         if (searchText == null || searchText.trim().isEmpty()) {
             for (int i = 0; i < filteredByType.size(); i++) {
                 filteredByType.get(i).setDisplayNumber(i + 1);
             }
-
-            // Перестраиваем колонки перед обновлением данных
             updateTableColumns(currentFilterType);
             personData.setAll(filteredByType);
             return;
         }
 
-        // Применяем поиск
         String lowerSearch = searchText.toLowerCase().trim();
         List<MilitaryPerson> searchResults = new ArrayList<>();
 
@@ -924,12 +637,10 @@ public class FXClientMain extends Application {
             }
         }
 
-        // Присваиваем номера
         for (int i = 0; i < searchResults.size(); i++) {
             searchResults.get(i).setDisplayNumber(i + 1);
         }
 
-        // Перестраиваем колонки перед обновлением данных
         updateTableColumns(currentFilterType);
         personData.setAll(searchResults);
     }
@@ -940,12 +651,10 @@ public class FXClientMain extends Application {
         alert.setHeaderText(null);
         alert.setContentText(message);
 
-        // Применяем стиль
         DialogPane dialogPane = alert.getDialogPane();
         dialogPane.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
         dialogPane.getStyleClass().add("info-dialog");
 
-        // Центрируем
         if (owner != null) {
             alert.initOwner(owner);
         }
@@ -959,12 +668,10 @@ public class FXClientMain extends Application {
         alert.setHeaderText(null);
         alert.setContentText(message);
 
-        // Применяем стиль
         DialogPane dialogPane = alert.getDialogPane();
         dialogPane.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
         dialogPane.getStyleClass().add("info-dialog");
 
-        // Центрируем
         if (owner != null) {
             alert.initOwner(owner);
         }
@@ -984,14 +691,12 @@ public class FXClientMain extends Application {
     }
 
     private boolean matchesSearch(MilitaryPerson p, String searchText) {
-        // Поиск по строковым полям
         if (p.getLastName() != null && p.getLastName().toLowerCase().contains(searchText)) return true;
         if (p.getCompany() != null && p.getCompany().toLowerCase().contains(searchText)) return true;
         if (p.getRank() != null && p.getRank().toLowerCase().contains(searchText)) return true;
         if (p.getUnit() != null && p.getUnit().toLowerCase().contains(searchText)) return true;
         if (String.valueOf(p.getSalary()).contains(searchText)) return true;
 
-        // Поиск по датам
         if (p.getBirthDate() != null) {
             String birthDateStr = p.getBirthDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
             if (birthDateStr.contains(searchText)) return true;
@@ -1002,7 +707,6 @@ public class FXClientMain extends Application {
             if (enlistDateStr.contains(searchText)) return true;
         }
 
-        // Поля дочерних классов
         if (p instanceof MilitaryCommand) {
             MilitaryCommand cmd = (MilitaryCommand) p;
             if (cmd.getMilitaryDistrict() != null && cmd.getMilitaryDistrict().toLowerCase().contains(searchText)) return true;
@@ -1079,5 +783,3 @@ public class FXClientMain extends Application {
         launch(args);
     }
 }
-
-

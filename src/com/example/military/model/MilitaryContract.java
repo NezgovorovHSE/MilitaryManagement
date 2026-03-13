@@ -4,10 +4,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class MilitaryContract extends MilitaryPerson {
-    private String contractPeriod;      // период договора
-    private LocalDate contractDate;     // дата договора
-    private String protocolNumber;      // номер протокола
-    private double salary;              // сумма зарплаты (переопределяем поле)
+    private String contractPeriod;
+    private LocalDate contractDate;
+    private String protocolNumber;
+    private double salary;
 
     public MilitaryContract(String lastName, String company, String rank,
                             LocalDate birthDate, LocalDate enlistmentDate,
@@ -21,7 +21,6 @@ public class MilitaryContract extends MilitaryPerson {
         this.salary = salary;
     }
 
-    // Геттеры и сеттеры
     public String getContractPeriod() {
         return contractPeriod;
     }

@@ -4,9 +4,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class MilitaryAwarded extends MilitaryPerson {
-    private String awardName;           // название награды
-    private double prize;                // премия
-    private double allowance;             // сумма надбавки
+    private String awardName;
+    private double prize;
+    private double allowance;
 
     public MilitaryAwarded(String lastName, String company, String rank,
                            LocalDate birthDate, LocalDate enlistmentDate,
@@ -18,7 +18,6 @@ public class MilitaryAwarded extends MilitaryPerson {
         this.allowance = allowance;
     }
 
-    // Геттеры и сеттеры
     public String getAwardName() {
         return awardName;
     }

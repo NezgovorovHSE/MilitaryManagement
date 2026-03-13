@@ -7,16 +7,10 @@ import com.google.gson.JsonObject;
 
 public class RequestParser {
 
-    /**
-     * Разбирает входящий запрос и возвращает команду
-     */
     public static String getCommand(String requestJson) {
         return JsonConverter.extractCommand(requestJson);
     }
 
-    /**
-     * Извлекает данные военнослужащего из запроса ADD
-     */
     public static MilitaryPerson extractPersonFromAddRequest(String requestJson) {
         JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
         JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
@@ -38,9 +32,6 @@ public class RequestParser {
         return null;
     }
 
-    /**
-     * Извлекает ID из запроса DELETE/GET
-     */
     public static Integer extractIdFromRequest(String requestJson) {
         JsonObject data = JsonConverter.extractData(requestJson);
         if (data != null && data.has("id")) {
@@ -49,9 +40,6 @@ public class RequestParser {
         return null;
     }
 
-    /**
-     * Проверяет, является ли запрос корректным
-     */
     public static boolean isValidRequest(String requestJson) {
         try {
             String command = getCommand(requestJson);

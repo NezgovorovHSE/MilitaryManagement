@@ -4,7 +4,7 @@ public class User {
     private int id;
     private String username;
     private String fullName;
-    private String passwordHash;  // для временного хранения/проверки
+    private String passwordHash;
 
     public User(int id, String username, String fullName, String passwordHash) {
         this.id = id;
@@ -13,7 +13,6 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
-    // Геттеры
     public int getId() {
         return id;
     }
@@ -30,7 +29,6 @@ public class User {
         return passwordHash;
     }
 
-    // Сеттеры (если нужны)
     public void setId(int id) {
         this.id = id;
     }

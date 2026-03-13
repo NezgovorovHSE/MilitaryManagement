@@ -12,16 +12,9 @@ public class FileManager {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final String DELIMITER = ";";
 
-    /**
-     * Сохраняет список военнослужащих в файл
-     * @param personnel список военнослужащих
-     * @param fileName имя файла
-     * @return true если сохранение успешно, false в случае ошибки
-     */
     public static boolean saveToFile(List<MilitaryPerson> personnel, String fileName) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
 
-            // Записываем заголовок с информацией
             writer.write("# Файл с данными военнослужащих");
             writer.newLine();
             writer.write("# Дата сохранения: " + LocalDate.now().format(DATE_FORMATTER));
@@ -31,7 +24,6 @@ public class FileManager {
             writer.write("=".repeat(100));
             writer.newLine();
 
-            // Записываем каждого военнослужащего
             for (MilitaryPerson person : personnel) {
                 String line = personToLine(person);
                 writer.write(line);
@@ -48,11 +40,6 @@ public class FileManager {
         }
     }
 
-    /**
-     * Загружает список военнослужащих из файла
-     * @param fileName имя файла
-     * @return список военнослужащих или null в случае ошибки
-     */
     public static List<MilitaryPerson> loadFromFile(String fileName) {
         List<MilitaryPerson> personnel = new ArrayList<>();
         int lineNumber = 0;
@@ -64,7 +51,6 @@ public class FileManager {
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
 
-                // Пропускаем пустые строки и комментарии
                 if (line.trim().isEmpty() || line.startsWith("#") || line.startsWith("=")) {
                     continue;
                 }
@@ -93,13 +79,9 @@ public class FileManager {
         }
     }
 
-    /**
-     * Преобразует объект MilitaryPerson в строку для записи в файл
-     */
     private static String personToLine(MilitaryPerson person) {
         StringBuilder sb = new StringBuilder();
 
-        // Определяем тип объекта и базовые поля
         String type = getPersonType(person);
         sb.append(type).append(DELIMITER);
         sb.append(nullSafe(person.getLastName())).append(DELIMITER);
@@ -110,22 +92,19 @@ public class FileManager {
         sb.append(nullSafe(person.getUnit())).append(DELIMITER);
         sb.append(person.getSalary()).append(DELIMITER);
 
-        // Добавляем специфичные для дочерних классов поля
         if (person instanceof MilitaryCommand) {
             MilitaryCommand cmd = (MilitaryCommand) person;
             sb.append(nullSafe(cmd.getMilitaryDistrict())).append(DELIMITER);
             sb.append(nullSafe(cmd.getPosition())).append(DELIMITER);
             sb.append(cmd.getYearsOfService()).append(DELIMITER);
             sb.append(cmd.getAllowance());
-        }
-        else if (person instanceof MilitaryContract) {
+        } else if (person instanceof MilitaryContract) {
             MilitaryContract contract = (MilitaryContract) person;
             sb.append(nullSafe(contract.getContractPeriod())).append(DELIMITER);
             sb.append(formatDate(contract.getContractDate())).append(DELIMITER);
             sb.append(nullSafe(contract.getProtocolNumber())).append(DELIMITER);
             sb.append(contract.getSalary());
-        }
-        else if (person instanceof MilitaryAwarded) {
+        } else if (person instanceof MilitaryAwarded) {
             MilitaryAwarded awarded = (MilitaryAwarded) person;
             sb.append(nullSafe(awarded.getAwardName())).append(DELIMITER);
             sb.append(awarded.getPrize()).append(DELIMITER);
@@ -135,9 +114,6 @@ public class FileManager {
         return sb.toString();
     }
 
-    /**
-     * Преобразует строку из файла в объект MilitaryPerson
-     */
     private static MilitaryPerson lineToPerson(String line) {
         String[] parts = line.split(DELIMITER);
         if (parts.length < 8) {
@@ -157,36 +133,29 @@ public class FileManager {
             case "BASE":
                 return new MilitaryPerson(lastName, company, rank, birthDate,
                         enlistmentDate, unit, salary);
-
             case "COMMAND":
                 if (parts.length < 12) throw new IllegalArgumentException("Недостаточно полей для MilitaryCommand");
                 return new MilitaryCommand(
                         lastName, company, rank, birthDate, enlistmentDate, unit, salary,
                         parts[8], parts[9], Integer.parseInt(parts[10]), Double.parseDouble(parts[11])
                 );
-
             case "CONTRACT":
                 if (parts.length < 11) throw new IllegalArgumentException("Недостаточно полей для MilitaryContract");
                 return new MilitaryContract(
                         lastName, company, rank, birthDate, enlistmentDate, unit, salary,
                         parts[8], parseDate(parts[9]), parts[10]
                 );
-
             case "AWARDED":
                 if (parts.length < 11) throw new IllegalArgumentException("Недостаточно полей для MilitaryAwarded");
                 return new MilitaryAwarded(
                         lastName, company, rank, birthDate, enlistmentDate, unit, salary,
                         parts[8], Double.parseDouble(parts[9]), Double.parseDouble(parts[10])
                 );
-
             default:
                 throw new IllegalArgumentException("Неизвестный тип: " + type);
         }
     }
 
-    /**
-     * Определяет тип объекта MilitaryPerson
-     */
     private static String getPersonType(MilitaryPerson person) {
         if (person instanceof MilitaryCommand) return "COMMAND";
         if (person instanceof MilitaryContract) return "CONTRACT";
@@ -194,9 +163,6 @@ public class FileManager {
         return "BASE";
     }
 
-    /**
-     * Вспомогательные методы для работы с null и датами
-     */
     private static String nullSafe(String value) {
         return value != null ? value : "";
     }
@@ -216,9 +182,6 @@ public class FileManager {
         }
     }
 
-    /**
-     * Подсчитывает количество комментариев в файле
-     */
     private static int countComments(String fileName) {
         int count = 0;
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
@@ -228,22 +191,14 @@ public class FileManager {
                     count++;
                 }
             }
-        } catch (IOException e) {
-            // Игнорируем ошибки при подсчете
-        }
+        } catch (IOException ignored) {}
         return count;
     }
 
-    /**
-     * Проверяет существование файла
-     */
     public static boolean fileExists(String fileName) {
         return new File(fileName).exists();
     }
 
-    /**
-     * Получает список доступных файлов с данными
-     */
     public static List<String> getDataFiles() {
         List<String> files = new ArrayList<>();
         File currentDir = new File(".");

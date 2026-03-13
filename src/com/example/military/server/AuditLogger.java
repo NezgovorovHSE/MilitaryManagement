@@ -26,7 +26,6 @@ public class AuditLogger {
         connection = conn;
     }
 
-    // Основной метод логирования с username (может быть null)
     public static void log(String username, String action, String details) {
         if (connection == null) return;
 
@@ -34,9 +33,7 @@ public class AuditLogger {
         String userPart = (username != null) ? username : "system";
         String logLine = String.format("[%s] [%s] %s - %s", timestamp, userPart, action, details);
 
-        // Запись в БД (сохраняем userId, если есть возможность получить)
         Integer userId = null;
-        // Здесь можно добавить получение userId по username, если нужно, но для простоты оставим null
         String sql = "INSERT INTO audit_log (user_id, action, details) VALUES (?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             if (userId != null) {
@@ -51,48 +48,38 @@ public class AuditLogger {
             System.err.println("Ошибка записи в аудит БД: " + e.getMessage());
         }
 
-        // Запись в файл
         if (fileWriter != null) {
             fileWriter.println(logLine);
             fileWriter.flush();
         }
 
-        // В консоль
         System.out.println("📝 " + logLine);
     }
 
-    // Старый метод для совместимости (можно оставить, но лучше постепенно убрать)
     public static void log(Integer userId, String action, String details) {
-        // Получить username по userId можно, если есть доступ к сервису, но для простоты оставляем как есть
-        // Вызываем новый метод с null username (будет записано как system)
         log((String) null, action, details);
     }
 
-    // Специализированные методы
     public static void logAdd(String username, MilitaryPerson person, int newId) {
         String type = getTypeString(person);
-        String userPart = (username != null) ? username : "system";
-        String details = String.format("(user: %s) ID: %d, Фамилия: %s, Тип: %s",
-                userPart, newId, person.getLastName(), type);
+        String details = String.format("ID: %d, Фамилия: %s, Тип: %s", newId, person.getLastName(), type);
         log(username, "ДОБАВЛЕНИЕ", details);
     }
+
     public static void logDelete(String username, MilitaryPerson person) {
         String type = getTypeString(person);
-        String details = String.format("ID: %d, Фамилия: %s, Тип: %s",
-                person.getId(), person.getLastName(), type);
+        String details = String.format("ID: %d, Фамилия: %s, Тип: %s", person.getId(), person.getLastName(), type);
         log(username, "УДАЛЕНИЕ", details);
     }
 
     public static void logLock(String username, MilitaryPerson person) {
         String type = getTypeString(person);
-        String details = String.format("ID: %d, Фамилия: %s, Тип: %s",
-                person.getId(), person.getLastName(), type);
+        String details = String.format("ID: %d, Фамилия: %s, Тип: %s", person.getId(), person.getLastName(), type);
         log(username, "БЛОКИРОВКА", details);
     }
 
     public static void logUnlock(String username, int recordId, String lastName, String type) {
-        String details = String.format("ID: %d, Фамилия: %s, Тип: %s",
-                recordId, lastName, type);
+        String details = String.format("ID: %d, Фамилия: %s, Тип: %s", recordId, lastName, type);
         log(username, "РАЗБЛОКИРОВКА", details);
     }
 
@@ -101,8 +88,7 @@ public class AuditLogger {
         String newType = getTypeString(newPerson);
 
         StringBuilder details = new StringBuilder();
-        details.append(String.format("ID: %d, Фамилия: %s",
-                newPerson.getId(), newPerson.getLastName()));
+        details.append(String.format("ID: %d, Фамилия: %s", newPerson.getId(), newPerson.getLastName()));
 
         if (!oldType.equals(newType)) {
             details.append(String.format(", Тип: %s -> %s", oldType, newType));

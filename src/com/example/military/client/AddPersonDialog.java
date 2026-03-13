@@ -28,7 +28,6 @@ public class AddPersonDialog {
         dialog.initOwner(owner);
         dialog.setTitle(isEditMode ? "Редактирование военнослужащего" : "Добавление военнослужащего");
 
-        // Добавляем иконку приложения
         try {
             InputStream iconStream = Thread.currentThread().getContextClassLoader()
                     .getResourceAsStream("com/example/military/client/star-icon.png");
@@ -36,20 +35,15 @@ public class AddPersonDialog {
                 Image icon = new Image(iconStream);
                 dialog.getIcons().add(icon);
             }
-        } catch (Exception e) {
-            // игнорируем
-        }
+        } catch (Exception ignored) {}
 
         if (isEditMode) {
-            dialog.setOnCloseRequest(event -> {
-                connector.unlockRecord(existingPerson.getId());
-            });
+            dialog.setOnCloseRequest(event -> connector.unlockRecord(existingPerson.getId()));
         }
 
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        // Верхняя часть – выбор типа
         VBox topBox = new VBox(5);
         topBox.setPadding(new Insets(0, 0, 10, 0));
 
@@ -60,16 +54,13 @@ public class AddPersonDialog {
         HBox typeBoxContainer = new HBox(10);
         typeBoxContainer.getChildren().add(typeBox);
 
-        // Правая колонка (StackPane, чтобы поля не накладывались, а переключались)
         StackPane rightStack = new StackPane();
         rightStack.setPrefWidth(350);
-        //rightStack.setPrefHeight(312);
         rightStack.setMaxHeight(312);
         rightStack.setMinHeight(312);
         rightStack.setStyle("-fx-border-color: #ccc; -fx-border-width: 0 0 0 1; -fx-padding: 0 0 0 20;");
-        rightStack.setVisible(false); // изначально скрыта
+        rightStack.setVisible(false);
 
-        // Поля для командования
         GridPane commandGrid = new GridPane();
         commandGrid.setHgap(10);
         commandGrid.setVgap(10);
@@ -78,7 +69,6 @@ public class AddPersonDialog {
                 new ColumnConstraints(300)
         );
 
-        // Поля для контрактников
         GridPane contractGrid = new GridPane();
         contractGrid.setHgap(10);
         contractGrid.setVgap(10);
@@ -87,7 +77,6 @@ public class AddPersonDialog {
                 new ColumnConstraints(300)
         );
 
-        // Поля для награждённых
         GridPane awardedGrid = new GridPane();
         awardedGrid.setHgap(10);
         awardedGrid.setVgap(10);
@@ -107,11 +96,9 @@ public class AddPersonDialog {
             changeTypeBtn.setOnAction(e -> {
                 typeBox.setDisable(false);
                 changeTypeBtn.setDisable(true);
-                // Скрываем все дочерние GridPane
                 commandGrid.setVisible(false);
                 contractGrid.setVisible(false);
                 awardedGrid.setVisible(false);
-                // Очищаем правую колонку
                 String currentType = typeBox.getValue();
 
                 if (currentType.equals("Командование")) {
@@ -127,7 +114,6 @@ public class AddPersonDialog {
                     rightStack.setVisible(true);
                     rightStack.setManaged(true);
                 } else {
-                    // Если тип "Военнослужащие" — скрываем правую колонку
                     rightStack.setVisible(false);
                     rightStack.setManaged(false);
                 }
@@ -139,11 +125,9 @@ public class AddPersonDialog {
         topBox.getChildren().addAll(typeLabel, typeBoxContainer);
         root.setTop(topBox);
 
-        // Центральная часть – левая колонка (общие поля) и правая колонка (дочерние поля)
         HBox centerBox = new HBox(20);
         centerBox.setPadding(new Insets(0, 0, 5, 0));
 
-        // Левая колонка
         GridPane leftGrid = new GridPane();
         leftGrid.setHgap(10);
         leftGrid.setVgap(10);
@@ -212,14 +196,11 @@ public class AddPersonDialog {
         awardedGrid.add(new Label("Надбавка*:"), 0, 2);
         awardedGrid.add(awardedAllowanceField, 1, 2);
 
-        // Добавляем все дочерние GridPane в StackPane (они будут накладываться)
         rightStack.getChildren().addAll(commandGrid, contractGrid, awardedGrid);
 
-        // Собираем центр
         centerBox.getChildren().addAll(leftGrid, rightStack);
         root.setCenter(centerBox);
 
-        // Кнопки
         HBox buttonBox = new HBox(10);
         buttonBox.setPadding(new Insets(0, 0, 5, 0));
         buttonBox.setAlignment(Pos.CENTER);
@@ -243,11 +224,9 @@ public class AddPersonDialog {
         bottomBox.getChildren().addAll(errorLabel, buttonBox);
         root.setBottom(bottomBox);
 
-        // Обработчик выбора типа (для режима добавления)
         typeBox.setOnAction(ev -> {
             String selected = typeBox.getValue();
 
-            // Скрываем все GridPane в StackPane
             commandGrid.setVisible(false);
             contractGrid.setVisible(false);
             awardedGrid.setVisible(false);
@@ -270,7 +249,6 @@ public class AddPersonDialog {
             }
         });
 
-        // Если редактирование – заполняем поля и показываем нужный GridPane
         if (isEditMode) {
             lastNameField.setText(existingPerson.getLastName());
             companyField.setText(existingPerson.getCompany());
@@ -286,7 +264,6 @@ public class AddPersonDialog {
             }
             unitField.setText(existingPerson.getUnit());
 
-            // Показываем нужный дочерний GridPane
             rightStack.setVisible(true);
             commandGrid.setVisible(false);
             contractGrid.setVisible(false);
@@ -316,7 +293,6 @@ public class AddPersonDialog {
             }
         }
 
-        // Логика сохранения (сокращена для ясности, но должна быть полная)
         saveBtn.setOnAction(e -> {
             try {
                 String selectedType = typeBox.getValue();
@@ -330,7 +306,6 @@ public class AddPersonDialog {
                     return;
                 }
 
-                // Валидация форматов
                 String errors = validateFields(
                         selectedType,
                         birthDateField.getText().trim(),
@@ -438,7 +413,7 @@ public class AddPersonDialog {
                     if (id > 0) {
                         dialog.close();
                         if (onSuccess != null) onSuccess.run();
-                        showAlert(owner, "","Запись успешно создана");
+                        showAlert(owner, "", "Запись успешно создана");
                     } else {
                         showAlert(owner, "Ошибка", "Не удалось создать запись");
                     }
@@ -455,18 +430,15 @@ public class AddPersonDialog {
             File cssFile = new File("target/classes/com/example/military/client/style.css");
             if (cssFile.exists()) {
                 scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-                System.out.println("AddPersonDialog: CSS загружен из target");
             }
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
 
-        // Путь для второго устройства (out)
         try {
             File cssFile = new File("out/com/example/military/client/style.css");
             if (cssFile.exists()) {
                 scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-                System.out.println("AddPersonDialog: CSS загружен из out");
             }
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
         dialog.setScene(scene);
         dialog.showAndWait();
     }
@@ -479,7 +451,6 @@ public class AddPersonDialog {
                                          String awardedAllowanceText) {
         List<String> errors = new ArrayList<>();
 
-        // Проверка дат
         if (!birthDateText.isEmpty() && !isValidDate(birthDateText)) {
             errors.add("Дата рождения - дд.мм.гггг");
         }
@@ -491,7 +462,6 @@ public class AddPersonDialog {
             errors.add("Дата договора - дд.мм.гггг");
         }
 
-        // Проверка чисел
         if (!isValidNumber(salaryText)) {
             errors.add("Зарплата - число");
         }

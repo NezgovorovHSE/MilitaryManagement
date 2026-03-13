@@ -18,7 +18,7 @@ public class ClientHandler implements Runnable {
     private final ServerLogger logger;
     private final int clientId;
     private static int clientCounter = 0;
-    private static final boolean AUTH_ENABLED = true;  // false - режим разработки, true - с аутентификацией
+    private static final boolean AUTH_ENABLED = true;
     private User currentUser = null;
     private String clientInfo;
 
@@ -43,10 +43,8 @@ public class ClientHandler implements Runnable {
             while ((inputLine = in.readLine()) != null) {
                 logger.logClientAction(clientInfo, "Получен запрос: " + inputLine);
 
-                // Обрабатываем запрос
                 String response = processRequest(inputLine);
 
-                // Отправляем ответ
                 out.println(response);
                 out.flush();
 
@@ -71,16 +69,12 @@ public class ClientHandler implements Runnable {
     }
 
     private String handleLockCommand(String requestJson) {
-        System.out.println("=== handleLockCommand ===");
-        System.out.println("currentUser = " + (currentUser != null ? currentUser.getId() : "null"));
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
             JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
 
             int recordId = data.get("id").getAsInt();
             int userId = data.get("userId").getAsInt();
-
-            // Проверку на currentUser убираем
 
             MilitaryPerson person = service.getPersonById(recordId);
 
@@ -103,16 +97,12 @@ public class ClientHandler implements Runnable {
     }
 
     private String handleUnlockCommand(String requestJson) {
-        System.out.println("=== handleUnlockCommand ===");
-        System.out.println("currentUser = " + (currentUser != null ? currentUser.getId() : "null"));
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
             JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
 
             int recordId = data.get("id").getAsInt();
             int userId = data.get("userId").getAsInt();
-
-            // Проверку убираем
 
             MilitaryPerson person = service.getPersonById(recordId);
             String lastName = (person != null) ? person.getLastName() : "неизвестно";
@@ -132,15 +122,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    // Вспомогательный метод для подсчета символов
-    private int countChar(String str, char c) {
-        int count = 0;
-        for (int i = 0; i < str.length(); i++) {
-            if (str.charAt(i) == c) count++;
-        }
-        return count;
-    }
-
     private String handleLogoutCommand() {
         if (currentUser != null) {
             AuditLogger.logLogout(currentUser.getUsername());
@@ -150,29 +131,17 @@ public class ClientHandler implements Runnable {
     }
 
     private String handleImportCommand(String requestJson) {
-        System.out.println("=== IMPORT RAW REQUEST ===");
-        System.out.println(requestJson);
-
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
-            System.out.println("=== REQUEST PARSED ===");
-            System.out.println(request.toString());
-
             JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
-            System.out.println("=== DATA OBJECT ===");
-            System.out.println(data != null ? data.toString() : "null");
 
             if (data == null) {
                 return ResponseBuilder.error("Нет данных в запросе");
             }
 
             String filePath = data.get("filePath").getAsString();
-            System.out.println("=== FILE PATH ===");
-            System.out.println(filePath);
-
             int userId = data.has("userId") ? data.get("userId").getAsInt() : 0;
 
-            // Читаем файл как JSON
             StringBuilder content = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
                 String line;
@@ -180,24 +149,8 @@ public class ClientHandler implements Runnable {
                     content.append(line);
                 }
             }
-            System.out.println("=== FILE CONTENT ===");
-            System.out.println(content.toString());
 
-            System.out.println("=== BEFORE PARSING ===");
-            System.out.println("Content length: " + content.length());
-            try {
-                List<MilitaryPerson> importedList = JsonConverter.listFromJson(content.toString());
-                System.out.println("=== AFTER PARSING ===");
-                System.out.println("List size: " + (importedList != null ? importedList.size() : "null"));
-            } catch (Exception e) {
-                System.out.println("=== PARSE EXCEPTION ===");
-                e.printStackTrace();
-            }
-
-            // Парсим JSON
             List<MilitaryPerson> importedList = JsonConverter.listFromJson(content.toString());
-            System.out.println("=== PARSED LIST SIZE ===");
-            System.out.println(importedList != null ? importedList.size() : "null");
 
             if (importedList == null || importedList.isEmpty()) {
                 return ResponseBuilder.error("Файл пуст или не содержит записей");
@@ -217,7 +170,6 @@ public class ClientHandler implements Runnable {
                 }
             }
 
-            // Логируем импорт
             User user = service.getUserById(userId);
             String username = (user != null) ? user.getUsername() : "system";
             AuditLogger.log(username, "ВЫГРУЗКА", "Из файла: " + filePath + ", добавлено: " + added + " записей");
@@ -230,9 +182,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Обработка запроса от клиента
-     */
     private String processRequest(String requestJson) {
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
@@ -243,7 +192,6 @@ public class ClientHandler implements Runnable {
                 if (data != null && data.has("userId")) {
                     int userId = data.get("userId").getAsInt();
                     if (currentUser == null || currentUser.getId() != userId) {
-                        // Загружаем пользователя по ID
                         currentUser = service.getUserById(userId);
                     }
                 }
@@ -284,7 +232,6 @@ public class ClientHandler implements Runnable {
 
     private String handleLoginCommand(String requestJson) {
         try {
-            // Если аутентификация отключена - пропускаем всех
             if (!AUTH_ENABLED) {
                 JsonObject responseData = new JsonObject();
                 responseData.addProperty("userId", 1);
@@ -292,7 +239,6 @@ public class ClientHandler implements Runnable {
                 return ResponseBuilder.success(responseData);
             }
 
-            // Правильный способ извлечения данных
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
             JsonObject data = request.getAsJsonObject(Protocol.FIELD_DATA);
 
@@ -312,7 +258,7 @@ public class ClientHandler implements Runnable {
             } else {
                 String ip = clientInfo.split(":")[0];
                 AuditLogger.logLogin(null, ip, false);
-                return ResponseBuilder.error("Неверное имя пользователя или пароль"); // ← добавить
+                return ResponseBuilder.error("Неверное имя пользователя или пароль");
             }
         } catch (Exception e) {
             logger.error("Ошибка обработки логина", e);
@@ -329,7 +275,6 @@ public class ClientHandler implements Runnable {
             int count = data.get("count").getAsInt();
             int userId = data.has("userId") ? data.get("userId").getAsInt() : 0;
 
-            // Получаем пользователя
             User user = service.getUserById(userId);
             String username = (user != null) ? user.getUsername() : "system";
 
@@ -363,12 +308,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Обработка команды ADD
-     */
     private String handleAddCommand(String requestJson) {
-        System.out.println("=== handleAddCommand ===");
-        System.out.println("currentUser = " + (currentUser != null ? currentUser.getId() : "null"));
         MilitaryPerson person = RequestParser.extractPersonFromAddRequest(requestJson);
         Integer userId = RequestParser.extractUserIdFromRequest(requestJson);
 
@@ -376,7 +316,6 @@ public class ClientHandler implements Runnable {
             return ResponseBuilder.error("Не удалось извлечь данные военнослужащего");
         }
 
-        // Здесь можно использовать userId для логирования или проверки прав
         int id = service.addPerson(person);
 
         if (id > 0) {
@@ -388,39 +327,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void logUserAction(String action, String details) {
-        Integer userId = (currentUser != null) ? currentUser.getId() : null;
-        AuditLogger.log(userId, action, details);
-    }
-
-    /**
-     * Обработка команды GET_ALL
-     */
-    private String handleGetAllCommand() {
-        List<MilitaryPerson> list = service.getAllPersons();
-        AuditLogger.log(getCurrentUsername(), "ПРОСМОТР", "Загружено записей: " + list.size());
-        return ResponseBuilder.personList(list);
-    }
-
-    /**
-     * Обработка команды GET_BY_ID
-     */
-    private String handleGetByIdCommand(String requestJson) {
-        Integer id = RequestParser.extractIdFromRequest(requestJson);
-
-        if (id == null) {
-            return ResponseBuilder.error("Не указан ID военнослужащего");
-        }
-
-        MilitaryPerson person = service.getPersonById(id);
-
-        if (person != null) {
-            return ResponseBuilder.singlePerson(person);
-        } else {
-            return ResponseBuilder.notFound("Военнослужащий с ID " + id + " не найден");
-        }
-    }
-
     private String handleUpdateCommand(String requestJson) {
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
@@ -428,10 +334,8 @@ public class ClientHandler implements Runnable {
             JsonObject personData = data.getAsJsonObject("person");
             int userId = data.get("userId").getAsInt();
 
-            // Получаем данные из запроса
             MilitaryPerson newPerson = JsonConverter.fromJson(personData.toString());
 
-            // Получаем СТАРУЮ версию из БД
             MilitaryPerson oldPerson = service.getPersonById(newPerson.getId());
 
             boolean updated = service.updatePerson(newPerson);
@@ -449,9 +353,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Обработка команды DELETE
-     */
     private String handleDeleteCommand(String requestJson) {
         try {
             JsonObject request = new com.google.gson.JsonParser().parse(requestJson).getAsJsonObject();
@@ -460,13 +361,11 @@ public class ClientHandler implements Runnable {
             int id = data.get("id").getAsInt();
             int userId = data.get("userId").getAsInt();
 
-            // Проверяем, не заблокирована ли запись другим пользователем
             Integer lockOwner = service.checkLockOwner(id);
             if (lockOwner != null && lockOwner != userId) {
                 return ResponseBuilder.error("Запись редактируется другим пользователем");
             }
 
-            // Получаем person ДО удаления
             MilitaryPerson person = service.getPersonById(id);
 
             boolean deleted = service.deletePerson(id);
@@ -486,26 +385,5 @@ public class ClientHandler implements Runnable {
             logger.error("Ошибка удаления", e);
             return ResponseBuilder.error("Error");
         }
-    }
-
-    /**
-     * Обработка команды CLEAR
-     */
-    private String handleClearCommand() {
-        boolean cleared = service.clearAll();
-
-        if (cleared) {
-            return ResponseBuilder.successWithMessage("Все записи удалены");
-        } else {
-            return ResponseBuilder.error("Ошибка при удалении всех записей");
-        }
-    }
-
-    /**
-     * Обработка команды COUNT
-     */
-    private String handleCountCommand() {
-        int count = service.getCount();
-        return ResponseBuilder.countResponse(count);
     }
 }

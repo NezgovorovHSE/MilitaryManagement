@@ -4,11 +4,8 @@ import com.example.military.model.MilitaryPerson;
 import com.example.military.model.User;
 import org.mindrot.jbcrypt.BCrypt;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-
 
 public class MilitaryService {
     private final DatabaseManager dbManager;
@@ -61,9 +58,6 @@ public class MilitaryService {
         }
     }
 
-    /**
-     * Добавление нового военнослужащего
-     */
     public int addPerson(MilitaryPerson person) {
         try {
             int id = dbManager.savePerson(person);
@@ -75,9 +69,6 @@ public class MilitaryService {
         }
     }
 
-    /**
-     * Получение всех военнослужащих
-     */
     public List<MilitaryPerson> getAllPersons() {
         try {
             List<MilitaryPerson> list = dbManager.loadAllPersons();
@@ -85,21 +76,16 @@ public class MilitaryService {
             return list;
         } catch (SQLException e) {
             logger.error("Ошибка при загрузке списка", e);
-            return List.of(); // Пустой список
+            return List.of();
         }
     }
 
-    /**
-     * Получение военнослужащего по ID
-     */
     public MilitaryPerson getPersonById(int id) {
         try {
             MilitaryPerson person = dbManager.loadPersonById(id);
             if (person != null) {
-                System.out.println("getPersonById для ID=" + id + " вернул: " + person.getLastName() + ", ID в объекте=" + person.getId());
                 logger.log("🔍 Запрошен военнослужащий ID " + id + ": " + person.getLastName());
             } else {
-                System.out.println("getPersonById для ID=" + id + " вернул null");
                 logger.log("🔍 Военнослужащий ID " + id + " не найден");
             }
             return person;
@@ -111,7 +97,6 @@ public class MilitaryService {
 
     public boolean updatePerson(MilitaryPerson person) {
         try {
-            // TODO: реализовать UPDATE в DatabaseManager
             return dbManager.updatePerson(person);
         } catch (SQLException e) {
             logger.error("Ошибка обновления", e);
@@ -137,9 +122,6 @@ public class MilitaryService {
         }
     }
 
-    /**
-     * Удаление военнослужащего по ID
-     */
     public boolean deletePerson(int id) {
         try {
             boolean deleted = dbManager.deletePerson(id);
@@ -155,9 +137,6 @@ public class MilitaryService {
         }
     }
 
-    /**
-     * Получение количества военнослужащих
-     */
     public int getCount() {
         try {
             int count = dbManager.getCount();
@@ -169,9 +148,6 @@ public class MilitaryService {
         }
     }
 
-    /**
-     * Очистка всех записей
-     */
     public boolean clearAll() {
         try {
             dbManager.clearAll();

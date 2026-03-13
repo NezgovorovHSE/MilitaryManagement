@@ -46,38 +46,25 @@ public class JsonConverter {
     }
 
     public static List<MilitaryPerson> listFromJson(String json) {
-        System.out.println("=== listFromJson ===");
-        System.out.println("JSON length: " + json.length());
-        System.out.println("First 100 chars: " + json.substring(0, Math.min(100, json.length())));
-
         try {
             Type listType = new TypeToken<List<MilitaryPerson>>(){}.getType();
             List<MilitaryPerson> result = gson.fromJson(json, listType);
-            System.out.println("Parsed " + (result != null ? result.size() : 0) + " items");
             return result;
         } catch (Exception e) {
-            System.err.println("Error parsing JSON list: " + e.getMessage());
-            e.printStackTrace();
             return new ArrayList<>();
         }
     }
 
     public static String createRequest(String command, Object data) {
-        System.out.println("=== createRequest ===");
-        System.out.println("data class: " + (data != null ? data.getClass().getName() : "null"));
-
         JsonObject request = new JsonObject();
         request.addProperty(Protocol.FIELD_COMMAND, command);
 
         if (data != null) {
             JsonElement dataJson = gson.toJsonTree(data);
-            System.out.println("dataJson: " + dataJson);
             request.add(Protocol.FIELD_DATA, dataJson);
         }
 
-        String result = gson.toJson(request);
-        System.out.println("result: " + result);
-        return result;
+        return gson.toJson(request);
     }
 
     public static LocalDate parseDate(String dateStr) {
@@ -85,22 +72,19 @@ public class JsonConverter {
             return null;
         }
 
-        // Список возможных форматов
         List<DateTimeFormatter> formatters = Arrays.asList(
                 DateTimeFormatter.ofPattern("dd.MM.yyyy"),
                 DateTimeFormatter.ofPattern("yyyy-MM-dd"),
                 DateTimeFormatter.ofPattern("dd/MM/yyyy"),
                 DateTimeFormatter.ofPattern("yyyy/MM/dd"),
                 DateTimeFormatter.ofPattern("dd-MM-yyyy"),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss") // для ISO с временем
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
         );
 
         for (DateTimeFormatter formatter : formatters) {
             try {
                 return LocalDate.parse(dateStr, formatter);
-            } catch (DateTimeParseException ignored) {
-                // пробуем следующий формат
-            }
+            } catch (DateTimeParseException ignored) {}
         }
 
         throw new DateTimeParseException("Не удалось распарсить дату: " + dateStr, dateStr, 0);
@@ -152,7 +136,7 @@ public class JsonConverter {
             if (value == null) {
                 out.nullValue();
             } else {
-                out.value(value.toString()); // ISO format
+                out.value(value.toString());
             }
         }
 
@@ -162,7 +146,7 @@ public class JsonConverter {
                 in.nextNull();
                 return null;
             }
-            return LocalDate.parse(in.nextString()); // ISO format
+            return LocalDate.parse(in.nextString());
         }
     }
 
@@ -201,7 +185,6 @@ public class JsonConverter {
             } else if (src instanceof MilitaryContract) {
                 MilitaryContract contract = (MilitaryContract) src;
                 data.addProperty("contractPeriod", contract.getContractPeriod());
-                // При сериализации (записи в JSON) используем ISO
                 data.addProperty("contractDate", contract.getContractDate() != null ? contract.getContractDate().toString() : null);
                 data.addProperty("protocolNumber", contract.getProtocolNumber());
             } else if (src instanceof MilitaryAwarded) {
@@ -242,7 +225,6 @@ public class JsonConverter {
 
             switch (type) {
                 case Protocol.TYPE_COMMAND:
-                    int cmdId = data.has("id") ? data.get("id").getAsInt() : 0;
                     MilitaryCommand cmd = new MilitaryCommand(
                             lastName, company, rank, birthDate, enlistmentDate, unit, salary,
                             data.get("militaryDistrict").getAsString(),
@@ -250,7 +232,7 @@ public class JsonConverter {
                             data.get("yearsOfService").getAsInt(),
                             data.get("allowance").getAsDouble()
                     );
-                    cmd.setId(cmdId);  // добавить
+                    cmd.setId(id);
                     return cmd;
 
                 case Protocol.TYPE_CONTRACT:

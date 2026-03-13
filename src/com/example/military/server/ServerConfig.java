@@ -13,20 +13,18 @@ public class ServerConfig {
     private boolean logEnabled;
 
     public ServerConfig() {
-        // Значения по умолчанию
         this.port = Protocol.DEFAULT_PORT;
         this.dbFile = Protocol.DB_FILE_NAME;
         this.maxThreads = 10;
         this.logEnabled = true;
 
-        // Загружаем из файла, если существует
         loadFromFile();
     }
 
     private void loadFromFile() {
         File file = new File(CONFIG_FILE);
         if (!file.exists()) {
-            saveToFile(); // Создаём файл с настройками по умолчанию
+            saveToFile();
             return;
         }
 
@@ -62,7 +60,6 @@ public class ServerConfig {
         }
     }
 
-    // Геттеры и сеттеры
     public int getPort() { return port; }
     public void setPort(int port) { this.port = port; }
 

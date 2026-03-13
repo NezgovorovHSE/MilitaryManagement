@@ -27,10 +27,8 @@ public class ServerLogger {
         String timestamp = LocalDateTime.now().format(formatter);
         String logMessage = String.format("[%s] %s", timestamp, message);
 
-        // В консоль всегда выводим
         System.out.println(logMessage);
 
-        // В файл, если включено
         if (enabled && fileWriter != null) {
             fileWriter.println(logMessage);
             fileWriter.flush();
