@@ -146,18 +146,11 @@ public class FXClientMain extends Application {
 
             Scene scene = new Scene(root, 1750, 840);
             try {
-                File cssFile = new File("target/classes/com/example/military/client/style.css");
-                if (cssFile.exists()) {
-                    scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-                }
-            } catch (Exception ignored) {}
-
-            try {
-                File cssFile = new File("out/com/example/military/client/style.css");
-                if (cssFile.exists()) {
-                    scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-                }
-            } catch (Exception ignored) {}
+                String cssPath = "/com/example/military/client/style.css";
+                scene.getStylesheets().add(getClass().getResource(cssPath).toExternalForm());
+            } catch (Exception e) {
+                System.err.println("Не удалось загрузить CSS: " + e.getMessage());
+            }
 
             primaryStage.setTitle("АРМ «Военный состав»");
             primaryStage.setScene(scene);
@@ -652,7 +645,12 @@ public class FXClientMain extends Application {
         alert.setContentText(message);
 
         DialogPane dialogPane = alert.getDialogPane();
-        dialogPane.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+        try {
+            String cssPath = "/com/example/military/client/style.css";
+            dialogPane.getStylesheets().add(getClass().getResource(cssPath).toExternalForm());
+        } catch (Exception e) {
+            System.err.println("Не удалось загрузить CSS для диалога: " + e.getMessage());
+        }
         dialogPane.getStyleClass().add("info-dialog");
 
         if (owner != null) {
@@ -669,7 +667,12 @@ public class FXClientMain extends Application {
         alert.setContentText(message);
 
         DialogPane dialogPane = alert.getDialogPane();
-        dialogPane.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
+        try {
+            String cssPath = "/com/example/military/client/style.css";
+            dialogPane.getStylesheets().add(getClass().getResource(cssPath).toExternalForm());
+        } catch (Exception e) {
+            System.err.println("Не удалось загрузить CSS для диалога: " + e.getMessage());
+        }
         dialogPane.getStyleClass().add("info-dialog");
 
         if (owner != null) {

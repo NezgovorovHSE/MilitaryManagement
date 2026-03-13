@@ -427,18 +427,11 @@ public class AddPersonDialog {
 
         Scene scene = new Scene(root, 1000, 508);
         try {
-            File cssFile = new File("target/classes/com/example/military/client/style.css");
-            if (cssFile.exists()) {
-                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-            }
-        } catch (Exception ignored) {}
-
-        try {
-            File cssFile = new File("out/com/example/military/client/style.css");
-            if (cssFile.exists()) {
-                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-            }
-        } catch (Exception ignored) {}
+            String cssPath = "/com/example/military/client/style.css";
+            scene.getStylesheets().add(AddPersonDialog.class.getResource(cssPath).toExternalForm());
+        } catch (Exception e) {
+            System.err.println("Не удалось загрузить CSS: " + e.getMessage());
+        }
         dialog.setScene(scene);
         dialog.showAndWait();
     }

@@ -86,18 +86,11 @@ public class LoginDialog {
 
         Scene scene = new Scene(root, 400, 300);
         try {
-            File cssFile = new File("target/classes/com/example/military/client/style.css");
-            if (cssFile.exists()) {
-                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-            }
-        } catch (Exception ignored) {}
-
-        try {
-            File cssFile = new File("out/com/example/military/client/style.css");
-            if (cssFile.exists()) {
-                scene.getStylesheets().add(cssFile.toURI().toURL().toExternalForm());
-            }
-        } catch (Exception ignored) {}
+            String cssPath = "/com/example/military/client/style.css";
+            scene.getStylesheets().add(LoginDialog.class.getResource(cssPath).toExternalForm());
+        } catch (Exception e) {
+            System.err.println("Не удалось загрузить CSS: " + e.getMessage());
+        }
         dialog.setScene(scene);
 
         final User[] loggedUser = new User[1];
@@ -126,8 +119,6 @@ public class LoginDialog {
 
         cancelBtn.setOnAction(e -> dialog.close());
         passField.setOnAction(loginBtn.getOnAction());
-
-        scene.getStylesheets().add("file:build/classes/com/example/military/client/style.css");
 
         dialog.showAndWait();
         return loggedUser[0];
