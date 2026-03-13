@@ -87,9 +87,36 @@ public class LoginDialog {
         Scene scene = new Scene(root, 400, 300);
         try {
             String cssPath = "/com/example/military/client/style.css";
-            scene.getStylesheets().add(LoginDialog.class.getResource(cssPath).toExternalForm());
+            var cssUrl = LoginDialog.class.getResource(cssPath);
+            System.out.println("=== LoginDialog CSS Diagnostic ===");
+            System.out.println("cssPath = " + cssPath);
+            System.out.println("cssUrl = " + cssUrl);
+
+            if (cssUrl != null) {
+                // Попробуем прочитать содержимое через stream
+                try (var is = LoginDialog.class.getResourceAsStream(cssPath)) {
+                    if (is != null) {
+                        System.out.println("CSS stream доступен, пробуем прочитать первые байты...");
+                        byte[] buffer = new byte[100];
+                        int read = is.read(buffer);
+                        System.out.println("Прочитано байт: " + read);
+                        if (read > 0) {
+                            String preview = new String(buffer, 0, read).trim();
+                            System.out.println("Первые символы: " + preview.substring(0, Math.min(30, preview.length())));
+                        }
+                    } else {
+                        System.out.println("CSS stream НЕ доступен!");
+                    }
+                }
+
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+                System.out.println("CSS добавлен в сцену. Размер stylesheets: " + scene.getStylesheets().size());
+            } else {
+                System.err.println("CSS НЕ НАЙДЕН по пути: " + cssPath);
+            }
         } catch (Exception e) {
-            System.err.println("Не удалось загрузить CSS: " + e.getMessage());
+            System.err.println("Ошибка при загрузке CSS: " + e.getMessage());
+            e.printStackTrace();
         }
         dialog.setScene(scene);
 
