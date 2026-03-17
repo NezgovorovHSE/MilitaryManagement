@@ -32,7 +32,7 @@ public class Protocol {
     public static final String TYPE_AWARDED = "AWARDED";
 
     public static final int DEFAULT_PORT = 8080;
-    public static final String DEFAULT_HOST = "192.168.31.170";
+    public static final String DEFAULT_HOST = "localhost"; //Замените на серверный IP
     public static final String DB_FILE_NAME = "military.db";
 
     private Protocol() {}

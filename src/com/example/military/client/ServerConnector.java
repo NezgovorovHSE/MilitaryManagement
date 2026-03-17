@@ -20,7 +20,7 @@ public class ServerConnector {
     private Integer currentUserId = null;
 
     public ServerConnector() {
-        this.host = "192.168.31.170";
+        this.host = "localhost"; //Замените на серверный IP
         this.port = Protocol.DEFAULT_PORT;
     }
 
