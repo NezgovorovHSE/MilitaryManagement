@@ -1,5 +1,5 @@
 package com.example.military.client;
-
+//TEST
 import com.example.military.model.*;
 import javafx.application.Application;
 import javafx.application.Platform;
