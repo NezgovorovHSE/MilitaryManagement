@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FXClientMain extends Application {
-//TEST
+    private Integer test;
     private TableView<MilitaryPerson> table;
     private ObservableList<MilitaryPerson> personData;
     private ServerConnector connector;
