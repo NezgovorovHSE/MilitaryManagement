@@ -37,6 +37,7 @@ bin/
 out/
 target/
 build/
+runtime/
 *.class
 
 # Файлы IDE
